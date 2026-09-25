@@ -65,10 +65,11 @@ paths:
       description: |
         Contrôles effectués dans cet ordre (H6) :
         1. le code correspond à une session, sinon 400 CODE_INCONNU ;
-        2. l'étudiant n'est pas déjà présent, sinon 409 DEJA_PRESENT (RG3) ;
-        3. le code n'est pas expiré et la session n'est pas clôturée, sinon 410 CODE_EXPIRE (RG1).
+        2. l'étudiant existe et appartient à la promotion de la session, sinon 400 REQUETE_INVALIDE (H2, H9) ;
+        3. l'étudiant n'est pas déjà présent, sinon 409 DEJA_PRESENT (RG3) ;
+        4. le code n'est pas expiré et la session n'est pas clôturée, sinon 410 CODE_EXPIRE (RG1).
 
-        Un champ manquant ou un étudiant inconnu renvoie 400 REQUETE_INVALIDE (H2).
+        Un champ manquant renvoie aussi 400 REQUETE_INVALIDE (H2).
       requestBody:
         required: true
         content:

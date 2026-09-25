@@ -30,6 +30,15 @@ export function IconeErreur(proprietes) {
   );
 }
 
+export function IconeSucces(proprietes) {
+  return (
+    <Icone {...proprietes}>
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="8 12.5 11 15.5 16 9.5" />
+    </Icone>
+  );
+}
+
 export function IconeCopier(proprietes) {
   return (
     <Icone {...proprietes}>
@@ -62,6 +71,15 @@ export function IconeFormateur(proprietes) {
       <rect x="2" y="3" width="20" height="14" rx="2" />
       <line x1="8" y1="21" x2="16" y2="21" />
       <line x1="12" y1="17" x2="12" y2="21" />
+    </Icone>
+  );
+}
+
+export function IconeEtudiant(proprietes) {
+  return (
+    <Icone {...proprietes}>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </Icone>
   );
 }

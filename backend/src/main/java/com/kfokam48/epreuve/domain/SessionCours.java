@@ -63,6 +63,11 @@ public class SessionCours {
         this.statut = StatutSession.OUVERTE;
     }
 
+    /** RG1 : le code est accepté si la session est ouverte et que l'instant ne dépasse pas l'expiration. */
+    public boolean codeEstValide(Instant instant) {
+        return statut == StatutSession.OUVERTE && !instant.isAfter(expirationAt);
+    }
+
     public Long getId() {
         return id;
     }

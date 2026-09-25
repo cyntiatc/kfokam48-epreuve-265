@@ -40,3 +40,8 @@ async function envoyer(chemin, corps) {
 export function ouvrirSession(titre, promotionId) {
   return envoyer('/api/sessions', { titre, promotionId });
 }
+
+/** EF2 : POST /api/presences -> { id, sessionId, etudiantId, source } */
+export function marquerPresence(code, etudiantId) {
+  return envoyer('/api/presences', { code, etudiantId });
+}

@@ -19,6 +19,9 @@
   --couleur-primaire-pale: #eef2ff;
   --couleur-anneau: rgb(99 102 241 / 0.3);
 
+  --couleur-succes-fond: #f0fdf4;
+  --couleur-succes-bordure: #bbf7d0;
+  --couleur-succes-texte: #166534;
   --couleur-erreur-fond: #fef2f2;
   --couleur-erreur-bordure: #fecaca;
   --couleur-erreur-texte: #991b1b;
@@ -154,13 +157,58 @@ dd {
 }
 
 /* ==========================================================================
-   Page et carte
+   Page, onglets et carte
    ========================================================================== */
 
 .page {
-  max-width: 34rem;
+  max-width: 30rem;
   margin: 0 auto;
-  padding: 3rem 1rem;
+  padding: 2rem 1rem 3rem;
+}
+
+.onglets {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.5rem;
+  padding: 0.25rem;
+  background: #f1f5f9;
+  border: 1px solid var(--couleur-bordure);
+  border-radius: 10px;
+}
+
+.onglet {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--couleur-texte-doux);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--rayon-champ);
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.onglet:hover {
+  color: var(--couleur-texte);
+}
+
+.onglet[aria-selected='true'] {
+  color: var(--couleur-primaire);
+  background: var(--couleur-surface);
+  border-color: #c7d2fe;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
+}
+
+/* Après l'onglet actif : l'anneau de focus clavier doit rester visible sur lui aussi. */
+.onglet:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 3px var(--couleur-anneau);
 }
 
 .carte {
@@ -244,6 +292,13 @@ dd {
   box-shadow: 0 0 0 3px var(--couleur-anneau);
 }
 
+.champ__saisie--code {
+  font-family: var(--police-mono);
+  font-size: 1.25rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
 .champ__aide {
   font-size: 0.8rem;
   color: var(--couleur-texte-doux);
@@ -322,7 +377,7 @@ dd {
 }
 
 /* ==========================================================================
-   Bannière d'erreur
+   Bannières de réponse
    ========================================================================== */
 
 .banniere {
@@ -331,11 +386,21 @@ dd {
   gap: 0.75rem;
   margin-top: 1.25rem;
   padding: 0.875rem 1rem;
-  background: var(--couleur-erreur-fond);
-  border: 1px solid var(--couleur-erreur-bordure);
+  border: 1px solid;
   border-radius: var(--rayon-champ);
   font-size: 0.9rem;
+}
+
+.banniere--erreur {
+  background: var(--couleur-erreur-fond);
+  border-color: var(--couleur-erreur-bordure);
   color: var(--couleur-erreur-texte);
+}
+
+.banniere--succes {
+  background: var(--couleur-succes-fond);
+  border-color: var(--couleur-succes-bordure);
+  color: var(--couleur-succes-texte);
 }
 
 .banniere__icone {

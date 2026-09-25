@@ -45,6 +45,8 @@ class PresenceServiceTest {
     private EtudiantRepository etudiantRepository;
     @Mock
     private PresenceRepository presenceRepository;
+    @Mock
+    private AttributionService attributionService;
 
     private Promotion promotion;
     private SessionCours session;
@@ -69,6 +71,8 @@ class PresenceServiceTest {
         assertThat(presence.getEtudiant()).isSameAs(etudiant);
         assertThat(presence.getSource()).isEqualTo(SourcePresence.CODE);
         assertThat(presence.getMarqueeAt()).isEqualTo(Instant.parse("2026-09-28T08:05:00Z"));
+        // EF4 : le nouvel étudiant présent peut débloquer des exercices encore sans relecteur.
+        verify(attributionService).attribuerExercicesEnAttente(session);
     }
 
     @Test
@@ -133,6 +137,7 @@ class PresenceServiceTest {
         verifierErreur(() -> serviceA("2026-09-28T08:05:00Z").marquerPresence("K7P2QX", 1L),
                 CodeErreur.DEJA_PRESENT);
         verify(presenceRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(attributionService);
     }
 
     @Test
@@ -184,7 +189,8 @@ class PresenceServiceTest {
 
     private PresenceService serviceA(String instant) {
         Clock horloge = Clock.fixed(Instant.parse(instant), ZoneOffset.UTC);
-        return new PresenceService(sessionRepository, etudiantRepository, presenceRepository, horloge);
+        return new PresenceService(sessionRepository, etudiantRepository, presenceRepository,
+                attributionService, horloge);
     }
 
     private static void verifierErreur(ThrowingCallable appel, CodeErreur codeAttendu) {

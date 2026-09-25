@@ -56,6 +56,15 @@ public class Exercice {
         this.deposeAt = deposeAt;
     }
 
+    /** EF4 : un relecteur vient d'être attribué (D4 : DEPOSE -> EN_RELECTURE). */
+    public void passerEnRelecture() {
+        if (statut != StatutExercice.DEPOSE) {
+            throw new IllegalStateException(
+                    "Seul un exercice déposé peut passer en relecture (statut actuel : " + statut + ").");
+        }
+        statut = StatutExercice.EN_RELECTURE;
+    }
+
     public Long getId() {
         return id;
     }

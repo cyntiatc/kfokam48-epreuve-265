@@ -26,19 +26,24 @@ public class ExerciceService {
     private final SessionCoursRepository sessionRepository;
     private final EtudiantRepository etudiantRepository;
     private final ExerciceRepository exerciceRepository;
+    private final AttributionService attributionService;
     private final Clock horloge;
 
     public ExerciceService(SessionCoursRepository sessionRepository, EtudiantRepository etudiantRepository,
-                           ExerciceRepository exerciceRepository, Clock horloge) {
+                           ExerciceRepository exerciceRepository, AttributionService attributionService,
+                           Clock horloge) {
         this.sessionRepository = sessionRepository;
         this.etudiantRepository = etudiantRepository;
         this.exerciceRepository = exerciceRepository;
+        this.attributionService = attributionService;
         this.horloge = horloge;
     }
 
     /**
      * EF3 : dépose le lien de l'exercice d'un étudiant pour une session de sa promotion (H5).
      * La présence n'est pas exigée (H5). Un seul dépôt par étudiant et par session (RG4).
+     * Un relecteur est attribué aussitôt si un étudiant présent est éligible (EF4) : le statut renvoyé
+     * est alors EN_RELECTURE, sinon DEPOSE.
      */
     @Transactional
     public Exercice deposerExercice(Long sessionId, Long etudiantId, String lien) {
@@ -59,13 +64,17 @@ public class ExerciceService {
             throw dejaDepose();
         }
 
+        Exercice exercice;
         try {
-            return exerciceRepository.saveAndFlush(new Exercice(session, auteur, lienValide, Instant.now(horloge)));
+            exercice = exerciceRepository.saveAndFlush(new Exercice(session, auteur, lienValide, Instant.now(horloge)));
         } catch (DataIntegrityViolationException e) {
             // Deux dépôts simultanés passent le contrôle ci-dessus : la contrainte
             // UNIQUE (session_id, etudiant_id) refuse le second (ENF3).
             throw dejaDepose();
         }
+
+        attributionService.attribuerRelecteur(exercice);
+        return exercice;
     }
 
     /** RG5 : URL absolue http ou https, avec un hôte, de 2048 caractères au plus. */

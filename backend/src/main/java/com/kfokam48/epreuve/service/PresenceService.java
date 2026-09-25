@@ -22,19 +22,23 @@ public class PresenceService {
     private final SessionCoursRepository sessionRepository;
     private final EtudiantRepository etudiantRepository;
     private final PresenceRepository presenceRepository;
+    private final AttributionService attributionService;
     private final Clock horloge;
 
     public PresenceService(SessionCoursRepository sessionRepository, EtudiantRepository etudiantRepository,
-                           PresenceRepository presenceRepository, Clock horloge) {
+                           PresenceRepository presenceRepository, AttributionService attributionService,
+                           Clock horloge) {
         this.sessionRepository = sessionRepository;
         this.etudiantRepository = etudiantRepository;
         this.presenceRepository = presenceRepository;
+        this.attributionService = attributionService;
         this.horloge = horloge;
     }
 
     /**
      * EF2 : marque la présence d'un étudiant avec le code de la session.
      * Contrôles dans l'ordre de H6 : code connu, présence unique (RG3), code encore valide (RG1).
+     * Le nouvel étudiant présent devient relecteur possible des exercices encore sans relecteur (EF4, D3).
      */
     @Transactional
     public Presence marquerPresence(String code, Long etudiantId) {
@@ -60,13 +64,17 @@ public class PresenceService {
             throw new ErreurMetierException(CodeErreur.CODE_EXPIRE, "Ce code de présence a expiré.");
         }
 
+        Presence presence;
         try {
-            return presenceRepository.saveAndFlush(new Presence(session, etudiant, maintenant));
+            presence = presenceRepository.saveAndFlush(new Presence(session, etudiant, maintenant));
         } catch (DataIntegrityViolationException e) {
             // Deux envois simultanés passent le contrôle ci-dessus : la contrainte
             // UNIQUE (session_id, etudiant_id) refuse le second (ENF3).
             throw dejaPresent();
         }
+
+        attributionService.attribuerExercicesEnAttente(session);
+        return presence;
     }
 
     private static ErreurMetierException dejaPresent() {

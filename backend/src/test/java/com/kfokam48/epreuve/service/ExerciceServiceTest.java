@@ -46,6 +46,8 @@ class ExerciceServiceTest {
     private EtudiantRepository etudiantRepository;
     @Mock
     private ExerciceRepository exerciceRepository;
+    @Mock
+    private AttributionService attributionService;
 
     private ExerciceService service;
     private Promotion promotion;
@@ -54,7 +56,8 @@ class ExerciceServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ExerciceService(sessionRepository, etudiantRepository, exerciceRepository, HORLOGE);
+        service = new ExerciceService(sessionRepository, etudiantRepository, exerciceRepository,
+                attributionService, HORLOGE);
         promotion = avecId(new Promotion("L3 GL"), 1L);
         session = avecId(new SessionCours(promotion, "Spring Boot", "K7P2QX",
                 Instant.parse("2026-09-28T08:00:00Z")), 12L);
@@ -74,6 +77,8 @@ class ExerciceServiceTest {
         assertThat(exercice.getLien()).isEqualTo(LIEN);
         assertThat(exercice.getStatut()).isEqualTo(StatutExercice.DEPOSE);
         assertThat(exercice.getDeposeAt()).isEqualTo(Instant.parse("2026-09-28T09:00:00Z"));
+        // EF4 : un relecteur est recherché dès le dépôt.
+        verify(attributionService).attribuerRelecteur(exercice);
     }
 
     @ParameterizedTest
@@ -134,6 +139,7 @@ class ExerciceServiceTest {
 
         verifierErreur(() -> service.deposerExercice(12L, 1L, LIEN), CodeErreur.EXERCICE_DEJA_DEPOSE);
         verify(exerciceRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(attributionService);
     }
 
     @Test

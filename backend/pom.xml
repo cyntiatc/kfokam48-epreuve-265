@@ -69,6 +69,16 @@
             <artifactId>postgresql</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--
+            Validation des réponses par api/contrat.yaml (ticket #14, ENF1). Module "core" seulement :
+            il ne dépend ni des servlets ni de Spring. L'adaptateur MockMvc officiel cible javax.servlet (Spring 5).
+        -->
+        <dependency>
+            <groupId>com.atlassian.oai</groupId>
+            <artifactId>swagger-request-validator-core</artifactId>
+            <version>2.46.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -35,6 +35,9 @@ public enum CodeErreur {
     /** Aucune promotion ne correspond à l'identifiant demandé (EF7). */
     PROMOTION_INCONNUE(HttpStatus.NOT_FOUND),
 
+    /** La session est déjà clôturée (EF8, extension H3). */
+    SESSION_DEJA_CLOTUREE(HttpStatus.CONFLICT),
+
     /** Erreur inattendue côté serveur (ENF2). */
     ERREUR_INTERNE(HttpStatus.INTERNAL_SERVER_ERROR);
 

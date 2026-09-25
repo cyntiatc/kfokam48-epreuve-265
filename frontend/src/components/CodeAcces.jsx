@@ -16,7 +16,8 @@ const SEUIL_ALERTE_MS = 2 * 60 * 1000;
 /** Mise en valeur du code de présence d'une session ouverte (réponse 201 de POST /api/sessions). */
 export default function CodeAcces({ session }) {
   const restant = useTempsRestant(session.expirationAt);
-  const expire = restant === 0;
+  const cloturee = session.statut === 'CLOTUREE';
+  const expire = cloturee || restant === 0;
   const [etatCopie, setEtatCopie] = useState('attente');
 
   useEffect(() => {
@@ -43,7 +44,7 @@ export default function CodeAcces({ session }) {
       <div className="code-acces__entete">
         <span className="code-acces__libelle">Code de présence</span>
         <span className={`pastille pastille--${expire ? 'expire' : 'valide'}`} aria-live="polite">
-          {expire ? 'Expiré' : 'Valide'}
+          {libelleEtat(cloturee, expire)}
         </span>
       </div>
 
@@ -87,6 +88,13 @@ function CompteARebours({ restant, duree }) {
       </div>
     </div>
   );
+}
+
+function libelleEtat(cloturee, expire) {
+  if (cloturee) {
+    return 'Clôturée';
+  }
+  return expire ? 'Expiré' : 'Valide';
 }
 
 function formaterDuree(millisecondes) {

@@ -42,7 +42,7 @@ flowchart LR
 |---|---|---|---|---|
 | UC1 — Ouvrir une session de cours | Formateur | EF1 | `POST /api/sessions` | RG1, RG10 |
 | UC2 — Générer le code de présence | (inclus dans UC1) | EF1 | `POST /api/sessions` | RG1, RG10 |
-| UC3 — Clôturer la session | Formateur | EF8 | hors contrat (H3) | RG9 |
+| UC3 — Clôturer la session | Formateur | EF8 | `POST /api/sessions/{id}/cloture` (extension H3) | RG1, RG9 |
 | UC4 — Consulter le tableau récapitulatif | Formateur | EF7 | `GET /api/tableau` | RG11 |
 | UC5 — Marquer sa présence | Étudiant | EF2 | `POST /api/presences` | RG1, RG3 |
 | UC6 — Déposer le lien de son exercice | Étudiant | EF3 | `POST /api/exercices` | RG4, RG5 |

@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import Carte from './components/Carte.jsx';
+import ClotureSession from './components/ClotureSession.jsx';
 import EnTete from './components/EnTete.jsx';
 import FormulaireExercice from './components/FormulaireExercice.jsx';
 import FormulairePresence from './components/FormulairePresence.jsx';
 import FormulaireRelecture from './components/FormulaireRelecture.jsx';
 import FormulaireSession from './components/FormulaireSession.jsx';
 import {
-  IconeEtudiant, IconeExercice, IconeFormateur, IconeRelecture, IconeTableau,
+  IconeCadenas, IconeEtudiant, IconeExercice, IconeFormateur, IconeRelecture, IconeTableau,
 } from './components/Icones.jsx';
 import Onglets, { PanneauOnglet } from './components/Onglets.jsx';
 import TableauRecapitulatif from './components/TableauRecapitulatif.jsx';
@@ -24,6 +25,13 @@ export default function App() {
   const [presence, setPresence] = useState(null);
   const [ongletActif, setOngletActif] = useState('formateur');
 
+  /** Répercute la clôture sur la session affichée (en-tête, encadré du code) si c'est la même. */
+  function marquerCloturee(bilan) {
+    setSession((actuelle) => (actuelle?.id === bilan.id
+      ? { ...actuelle, statut: bilan.statut, clotureAt: bilan.clotureAt }
+      : actuelle));
+  }
+
   return (
     <>
       <EnTete session={session} />
@@ -32,13 +40,27 @@ export default function App() {
         <Onglets onglets={ONGLETS} actif={ongletActif} onChange={setOngletActif} libelle="Choix de l'espace" />
 
         <PanneauOnglet id="formateur" actif={ongletActif}>
-          <Carte
-            icone={<IconeFormateur />}
-            titre="Ouvrir une session de cours"
-            sousTitre="Le code de présence généré est valable 15 minutes"
-          >
-            <FormulaireSession session={session} onSessionOuverte={setSession} />
-          </Carte>
+          <div className="pile">
+            <Carte
+              icone={<IconeFormateur />}
+              titre="Ouvrir une session de cours"
+              sousTitre="Le code de présence généré est valable 15 minutes"
+            >
+              <FormulaireSession session={session} onSessionOuverte={setSession} />
+            </Carte>
+
+            <Carte
+              icone={<IconeCadenas />}
+              titre="Clôturer une session"
+              sousTitre="Rend les notes définitives et ferme l’émargement"
+            >
+              <ClotureSession
+                key={session?.id ?? 'sans-session'}
+                sessionIdInitial={session?.id}
+                onSessionCloturee={marquerCloturee}
+              />
+            </Carte>
+          </div>
         </PanneauOnglet>
 
         <PanneauOnglet id="etudiant" actif={ongletActif}>

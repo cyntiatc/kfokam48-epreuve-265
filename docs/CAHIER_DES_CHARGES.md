@@ -117,10 +117,12 @@ Chaque exigence est vérifiée par des critères d'acceptation « Quand… Alors
 
 ### EF8 — Clôturer une session
 
-- **Acteur :** Formateur — **Route :** hors contrat imposé, à valider (H3) — **Règles :** RG1, RG9
+- **Acteur :** Formateur — **Route :** `POST /api/sessions/{id}/cloture` (extension H3, ticket #12) — **Règles :** RG1, RG9
 - **Critères d'acceptation :**
-  - **Quand** le formateur clôture une session `OUVERTE`, **Alors** la session passe à `CLOTUREE`, les notes rendues deviennent définitives (exercices `DEFINITIF`) et les exercices sans relecteur passent à `SANS_RELECTURE`.
+  - **Quand** le formateur clôture une session `OUVERTE`, **Alors** la session passe à `CLOTUREE`, les notes rendues deviennent définitives (exercices `DEFINITIF`) et les exercices sans relecteur passent à `SANS_RELECTURE`. Le système répond `200` avec le bilan de la clôture.
   - **Quand** un étudiant saisit ensuite le code de cette session, **Alors** le système répond `410 CODE_EXPIRE`.
+  - **Quand** la session est déjà clôturée, **Alors** le système répond `409 SESSION_DEJA_CLOTUREE`. La clôture est irréversible.
+  - **Quand** la session n'existe pas, **Alors** le système répond `400 REQUETE_INVALIDE` (H2).
 
 ## 5. Exigences non fonctionnelles
 
@@ -193,7 +195,7 @@ Les deux réponses sont incompatibles : selon Q15, un second envoi est toujours 
 |---|---|---|
 | H1 | Champ `source` d'une présence | Le sujet ne le définit pas. Il indique l'origine de la présence. Seule valeur en version 1 : `CODE` (présence saisie par l'étudiant avec le code). |
 | H2 | Erreurs de validation génériques | Le contrat ne fixe pas de code d'erreur pour les champs manquants, les formats incorrects ou les identifiants inconnus. Ces cas renvoient `400` avec le code `REQUETE_INVALIDE`. Le seul `404` utilisé est `PROMOTION_INCONNUE`. |
-| H3 | Routes absentes du contrat imposé | Deux besoins n'ont pas de route : la clôture d'une session (EF8, nécessaire à la décision Q10) et la consultation par un relecteur des relectures qui lui sont attribuées (il lui faut l'`id` de la relecture et le lien de l'exercice). Pour respecter le contrat imposé, ces routes n'y figuraient pas au départ. **Décision (ticket #10) :** la consultation `GET /api/relectures?relecteurId=` est ajoutée à `api/contrat.yaml`, marquée comme extension. Sans elle, l'écran Relecteur est inutilisable. La clôture (`POST /api/sessions/{id}/cloture`) reste à valider avec le formateur. |
+| H3 | Routes absentes du contrat imposé | Deux besoins n'ont pas de route : la clôture d'une session (EF8, nécessaire à la décision Q10) et la consultation par un relecteur des relectures qui lui sont attribuées (il lui faut l'`id` de la relecture et le lien de l'exercice). Pour respecter le contrat imposé, ces routes n'y figuraient pas au départ. **Décision (ticket #10) :** la consultation `GET /api/relectures?relecteurId=` est ajoutée à `api/contrat.yaml`, marquée comme extension. Sans elle, l'écran Relecteur est inutilisable. **Décision (ticket #12) :** la clôture `POST /api/sessions/{id}/cloture` est ajoutée de la même façon, car la décision Q10 n'a d'effet que si le formateur peut clôturer. |
 | H4 | Identification des utilisateurs | Le contrat ne prévoit pas d'authentification. L'étudiant est identifié par l'`etudiantId` transmis dans le corps de `POST /api/presences` et `POST /api/exercices`. `POST /api/sessions` ne reçoit que `titre` et `promotionId` : le formateur n'est pas enregistré. `POST /api/relectures/{id}` ne reçoit que `note` et `commentaire` : l'émetteur n'est pas transmis. Le `403 AUTO_RELECTURE` vérifie donc que le relecteur attribué n'est pas l'auteur de l'exercice. Conséquence acceptée en version 1 : toute personne qui connaît l'`id` d'une relecture peut la soumettre. Identifier réellement l'émetteur demandera une authentification. Promotions et étudiants sont pré-chargés en base. |
 | H5 | Dépôt et présence | Le contrat ne prévoit aucune erreur liée à la présence sur `POST /api/exercices`. Un étudiant de la promotion peut donc déposer un exercice même s'il n'est pas présent. |
 | H6 | Ordre des contrôles de présence | Les contrôles s'enchaînent ainsi : `CODE_INCONNU`, puis le contrôle de l'étudiant (`REQUETE_INVALIDE`, H9), puis `DEJA_PRESENT`, puis `CODE_EXPIRE`. Un étudiant déjà présent qui ressaisit un code expiré est donc informé qu'il est déjà présent. |

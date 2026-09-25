@@ -18,4 +18,8 @@ public interface ExerciceRepository extends JpaRepository<Exercice, Long> {
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<Exercice> findBySessionIdAndStatutOrderByDeposeAtAsc(Long sessionId, StatutExercice statut);
+
+    /** Tous les exercices d'une session, verrouillés le temps de la clôture (EF8). */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<Exercice> findBySessionIdOrderByDeposeAtAsc(Long sessionId);
 }

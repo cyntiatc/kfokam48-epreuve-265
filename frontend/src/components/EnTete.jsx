@@ -9,6 +9,8 @@ export default function EnTete({ session }) {
   let statut;
   if (!session) {
     statut = { variante: 'neutre', texte: 'Aucune session ouverte' };
+  } else if (session.statut === 'CLOTUREE') {
+    statut = { variante: 'neutre', texte: 'Session clôturée' };
   } else if (expire) {
     statut = { variante: 'alerte', texte: 'Code de présence expiré' };
   } else {

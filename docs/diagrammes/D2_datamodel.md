@@ -2,13 +2,12 @@
 
 Candidate : Tedjou Nguimzi Cyntia — Matricule 265. Référence : `docs/CAHIER_DES_CHARGES.md`, sections 6 et 7.
 
-Les tables principales du domaine sont `sessions`, `presences`, `exercices` et `relectures`. Les tables `promotions`, `formateurs` et `etudiants` sont des données de référence pré-chargées (H4).
+Les tables principales du domaine sont `sessions`, `presences`, `exercices` et `relectures`. Les tables `promotions` et `etudiants` sont des données de référence pré-chargées (H4).
 
 ```mermaid
 erDiagram
     promotions ||--o{ etudiants : "regroupe"
     promotions ||--o{ sessions : "concerne"
-    formateurs ||--o{ sessions : "ouvre"
     sessions ||--o{ presences : "enregistre"
     etudiants ||--o{ presences : "marque"
     sessions ||--o{ exercices : "recoit"
@@ -19,12 +18,6 @@ erDiagram
     promotions {
         bigint id PK
         varchar(100) libelle UK
-    }
-    formateurs {
-        bigint id PK
-        varchar(100) nom
-        varchar(100) prenom
-        varchar(255) email UK
     }
     etudiants {
         bigint id PK
@@ -37,7 +30,6 @@ erDiagram
     sessions {
         bigint id PK
         bigint promotion_id FK
-        bigint formateur_id FK
         varchar(150) titre
         char(6) code UK "A-Z et 0-9 (RG10)"
         timestamptz ouverture_at
@@ -63,7 +55,7 @@ erDiagram
     relectures {
         bigint id PK
         bigint exercice_id FK, UK "une relecture par exercice (RG8)"
-        bigint relecteur_id FK "etudiant present, different de l'auteur (RG2, RG7)"
+        bigint relecteur_id FK "tire au sort par le systeme, present, different de l'auteur (RG2, RG7)"
         smallint note "0 a 20, NULL tant que non rendue (RG6)"
         text commentaire
         varchar(12) statut "EN_ATTENTE ou RENDUE"
@@ -96,6 +88,8 @@ erDiagram
 
 ## Choix de conception
 
+- **Formateur non enregistré :** `POST /api/sessions` ne reçoit que `titre` et `promotionId`. Aucune table `formateurs` ni colonne `sessions.formateur_id` n'est donc nécessaire en version 1. Elles seront ajoutées avec l'authentification (H4).
+- **Relecteur attribué, pas transmis :** `relectures.relecteur_id` est renseigné par le tirage au sort (RG8), jamais par la requête. `POST /api/relectures/{id}` ne reçoit que `note` et `commentaire`.
 - **Clôture et définitivité :** une note est définitive lorsque `sessions.statut = 'CLOTUREE'` (RG9). Cet état n'est pas dupliqué dans `relectures` : il est dérivé de la session.
 - **Dates :** `timestamptz`, en UTC (ENF6). L'expiration du code se compare à l'horloge du serveur.
 - **Nom de la table `sessions` :** au pluriel, comme toutes les tables, ce qui évite toute confusion avec le mot-clé SQL `SESSION`.

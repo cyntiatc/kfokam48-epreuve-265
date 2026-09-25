@@ -6,7 +6,7 @@
 | Matricule | 265 |
 | Épreuve | KFOKAM48 |
 | Étape | Étape 1 — Analyse, spécification et conception |
-| Version | 1.0 — 25/09/2026 |
+| Version | 1.1 — 25/09/2026 (alignement sur le contrat imposé) |
 | Frontend choisi | **React** |
 
 Documents associés : diagrammes `docs/diagrammes/D1_use_cases.md` à `D4_etats.md`, contrat d'API `api/contrat.yaml`.
@@ -51,8 +51,8 @@ Le Relecteur est une spécialisation de l'Étudiant : un même étudiant peut d�
 
 ### 3.2 Exclus (version 1)
 
-- Authentification et gestion des comptes : les identifiants sont transmis dans les requêtes (H4).
-- Administration des promotions, formateurs et étudiants : ces données de référence sont pré-chargées en base.
+- Authentification et gestion des comptes : l'étudiant est identifié par l'`etudiantId` transmis dans les requêtes (H4).
+- Administration des promotions et des étudiants : ces données de référence sont pré-chargées en base. Les formateurs ne sont pas enregistrés en version 1 (H4).
 - Notifications (e-mail, push), application mobile native, exports (PDF, CSV).
 - Relectures multiples d'un même exercice, contestation de note, réattribution manuelle.
 
@@ -65,7 +65,7 @@ Chaque exigence est vérifiée par des critères d'acceptation « Quand… Alors
 - **Acteur :** Formateur — **Route :** `POST /api/sessions` — **Règles :** RG1, RG10
 - **Critères d'acceptation :**
   - **Quand** le formateur ouvre une session pour une promotion existante avec un titre, **Alors** le système crée une session au statut `OUVERTE`, génère un code unique, fixe `expirationAt = ouvertureAt + 15 min` et répond `201` avec `{id, code, ouvertureAt, expirationAt}`.
-  - **Quand** un champ obligatoire est absent ou invalide (promotion ou formateur inconnu, titre vide), **Alors** le système répond `400` (`REQUETE_INVALIDE`) et aucune session n'est créée.
+  - **Quand** `titre` ou `promotionId` est absent ou invalide (titre vide, promotion inconnue), **Alors** le système répond `400` (`REQUETE_INVALIDE`) et aucune session n'est créée.
 
 ### EF2 — Marquer sa présence
 
@@ -96,9 +96,9 @@ Chaque exigence est vérifiée par des critères d'acceptation « Quand… Alors
 
 - **Acteur :** Relecteur — **Route :** `POST /api/relectures/{id}` — **Règles :** RG2, RG6, RG9
 - **Critères d'acceptation :**
-  - **Quand** le relecteur attribué envoie une note entière comprise entre 0 et 20 et un commentaire non vide, **Alors** le système répond `200`, la relecture passe à `RENDUE` et l'exercice passe à `RELU` (session ouverte) ou `DEFINITIF` (session clôturée, H8).
+  - **Quand** une note entière comprise entre 0 et 20 et un commentaire non vide sont envoyés pour une relecture attribuée, **Alors** le système répond `200`, la relecture passe à `RENDUE` et l'exercice passe à `RELU` (session ouverte) ou `DEFINITIF` (session clôturée, H8).
   - **Quand** la note est absente, non entière ou hors de l'intervalle [0 ; 20], **Alors** le système répond `400 NOTE_INVALIDE` et rien n'est enregistré.
-  - **Quand** l'émetteur (`relecteurId`) est l'auteur de l'exercice, **Alors** le système répond `403 AUTO_RELECTURE`.
+  - **Quand** le relecteur attribué à cette relecture est l'auteur de l'exercice (contrôle de sûreté, RG2), **Alors** le système répond `403 AUTO_RELECTURE` et rien n'est enregistré.
 
 ### EF6 — Modifier sa note avant la clôture (décision Q10)
 
@@ -139,7 +139,7 @@ Chaque exigence est vérifiée par des critères d'acceptation « Quand… Alors
 | ID | Intitulé | Description | Erreur associée | EF |
 |---|---|---|---|---|
 | RG1 | Validité du code | Le code de présence est valable 15 minutes à compter de l'ouverture : `expirationAt = ouvertureAt + 15 min`. Au-delà, ou après la clôture, il est refusé. | `410 CODE_EXPIRE` | EF1, EF2, EF8 |
-| RG2 | Pas d'auto-relecture | Un étudiant ne peut jamais relire son propre exercice : exclusion lors de l'attribution et contrôle lors de la soumission. | `403 AUTO_RELECTURE` | EF4, EF5 |
+| RG2 | Pas d'auto-relecture | Un étudiant ne peut jamais relire son propre exercice : il est exclu du tirage au sort, et la soumission vérifie à nouveau que le relecteur attribué n'est pas l'auteur. | `403 AUTO_RELECTURE` | EF4, EF5 |
 | RG3 | Présence unique | Une seule présence par couple (session, étudiant). | `409 DEJA_PRESENT` | EF2 |
 | RG4 | Dépôt unique | Un seul exercice par couple (session, étudiant). Le lien déposé n'est pas modifiable. | `409 EXERCICE_DEJA_DEPOSE` | EF3 |
 | RG5 | Format du lien | Le lien est une URL absolue `http` ou `https` de 2048 caractères au plus. | `400 LIEN_INVALIDE` | EF3 |
@@ -193,7 +193,7 @@ Les deux réponses sont incompatibles : selon Q15, un second envoi est toujours 
 | H1 | Champ `source` d'une présence | Le sujet ne le définit pas. Il indique l'origine de la présence. Seule valeur en version 1 : `CODE` (présence saisie par l'étudiant avec le code). |
 | H2 | Erreurs de validation génériques | Le contrat ne fixe pas de code d'erreur pour les champs manquants, les formats incorrects ou les identifiants inconnus. Ces cas renvoient `400` avec le code `REQUETE_INVALIDE`. Le seul `404` utilisé est `PROMOTION_INCONNUE`. |
 | H3 | Routes absentes du contrat imposé | Deux besoins n'ont pas de route : la clôture d'une session (EF8, nécessaire à la décision Q10) et la consultation par un relecteur des relectures qui lui sont attribuées (il lui faut l'`id` de la relecture et le lien de l'exercice). Pour respecter le contrat imposé, ces routes **ne sont pas ajoutées** à `api/contrat.yaml`. Proposition à valider avec le formateur : `POST /api/sessions/{id}/cloture` et `GET /api/relectures?relecteurId=`. |
-| H4 | Identification des utilisateurs | Le contrat ne prévoit pas d'authentification. Les identifiants (`formateurId`, `etudiantId`, `relecteurId`) sont transmis dans le corps des requêtes. Promotions, formateurs et étudiants sont pré-chargés en base. |
+| H4 | Identification des utilisateurs | Le contrat ne prévoit pas d'authentification. L'étudiant est identifié par l'`etudiantId` transmis dans le corps de `POST /api/presences` et `POST /api/exercices`. `POST /api/sessions` ne reçoit que `titre` et `promotionId` : le formateur n'est pas enregistré. `POST /api/relectures/{id}` ne reçoit que `note` et `commentaire` : l'émetteur n'est pas transmis. Le `403 AUTO_RELECTURE` vérifie donc que le relecteur attribué n'est pas l'auteur de l'exercice. Conséquence acceptée en version 1 : toute personne qui connaît l'`id` d'une relecture peut la soumettre. Identifier réellement l'émetteur demandera une authentification. Promotions et étudiants sont pré-chargés en base. |
 | H5 | Dépôt et présence | Le contrat ne prévoit aucune erreur liée à la présence sur `POST /api/exercices`. Un étudiant de la promotion peut donc déposer un exercice même s'il n'est pas présent. |
 | H6 | Ordre des contrôles de présence | Les contrôles s'enchaînent ainsi : `CODE_INCONNU`, puis `DEJA_PRESENT`, puis `CODE_EXPIRE`. Un étudiant déjà présent qui ressaisit un code expiré est donc informé qu'il est déjà présent. |
 | H7 | Calcul de la moyenne | La moyenne inclut les notes rendues encore modifiables (session ouverte). Le tableau reflète donc l'état courant. |
@@ -245,23 +245,19 @@ Les deux réponses sont incompatibles : selon Q15, un second envoi est toujours 
 
 | # | Issue | Priorité | EF | RG / H |
 |---|---|---|---|---|
-| 1 | Initialiser le backend Spring Boot (Maven, PostgreSQL) | Must | — | ENF8 |
-| 2 | Initialiser le frontend React | Must | — | ENF7 |
-| 3 | Gestion centralisée des erreurs au format `{code, message}` | Must | Toutes | RG12, H2 |
-| 4 | Schéma de base de données et contraintes (D2) | Must | — | RG3, RG4, RG6, RG8 |
-| 5 | `POST /api/sessions` : ouvrir une session et générer le code | Must | EF1 | RG1, RG10 |
-| 6 | `POST /api/presences` : marquer sa présence | Must | EF2 | RG1, RG3, H6 |
-| 7 | `POST /api/exercices` : déposer un exercice | Must | EF3 | RG4, RG5, H5 |
-| 8 | Attribution aléatoire équilibrée des relectures | Must | EF4 | RG2, RG7, RG8 |
-| 9 | `POST /api/relectures/{id}` : rendre ou modifier une relecture | Must | EF5, EF6 | RG2, RG6, RG9, H8 |
-| 10 | `GET /api/tableau` : tableau récapitulatif | Must | EF7 | RG11, H7 |
-| 11 | Écran Formateur : ouvrir une session et afficher le code | Must | EF1 | RG1 |
-| 12 | Écran Étudiant : saisir le code de présence | Must | EF2 | RG1, RG3 |
-| 13 | Écran Étudiant : déposer le lien de l'exercice | Must | EF3 | RG4, RG5 |
-| 14 | Écran Relecteur : noter et commenter un exercice | Must | EF5, EF6 | RG6, RG9 |
-| 15 | Écran Formateur : tableau récapitulatif | Must | EF7 | RG11 |
-| 16 | Clôture d'une session (route complémentaire à valider) | Should | EF8 | RG9, H3 |
-| 17 | Liste des relectures attribuées à un relecteur (route complémentaire à valider) | Should | EF5 | H3 |
-| 18 | Tests d'intégration des 5 routes au regard du contrat | Should | Toutes | ENF1, ENF2 |
-| 19 | Compte à rebours de validité du code à l'écran | Could | EF1, EF2 | RG1 |
-| 20 | Documentation interactive de l'API servie par le backend | Could | — | ENF1 |
+| 1 | `POST /api/sessions` : ouvrir une session et générer le code | Must | EF1 | RG1, RG10 |
+| 2 | `POST /api/presences` : marquer sa présence | Must | EF2 | RG1, RG3, H6 |
+| 3 | `POST /api/exercices` : déposer un exercice | Must | EF3 | RG4, RG5, H5 |
+| 4 | Attribution aléatoire équilibrée des relectures | Must | EF4 | RG2, RG7, RG8 |
+| 5 | `POST /api/relectures/{id}` : rendre ou modifier une relecture | Must | EF5, EF6 | RG2, RG6, RG9, H8 |
+| 6 | `GET /api/tableau` : tableau récapitulatif | Must | EF7 | RG11, H7 |
+| 7 | Écran Formateur : ouvrir une session et afficher le code | Must | EF1 | RG1 |
+| 8 | Écran Étudiant : saisir le code de présence | Must | EF2 | RG1, RG3 |
+| 9 | Écran Étudiant : déposer le lien de l'exercice | Must | EF3 | RG4, RG5 |
+| 10 | Écran Relecteur : noter et commenter un exercice | Must | EF5, EF6 | RG6, RG9 |
+| 11 | Écran Formateur : tableau récapitulatif | Must | EF7 | RG11 |
+| 12 | Clôture d'une session (route complémentaire à valider) | Should | EF8 | RG9, H3 |
+| 13 | Liste des relectures attribuées à un relecteur (route complémentaire à valider) | Should | EF5 | H3 |
+| 14 | Tests d'intégration des 5 routes au regard du contrat | Should | Toutes | ENF1, ENF2 |
+| 15 | Compte à rebours de validité du code à l'écran | Could | EF1, EF2 | RG1 |
+| 16 | Documentation interactive de l'API servie par le backend | Could | — | ENF1 |

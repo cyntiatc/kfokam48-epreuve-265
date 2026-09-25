@@ -39,7 +39,7 @@ stateDiagram-v2
 | Dépôt d'un lien qui n'est pas une URL `http(s)` | `400 LIEN_INVALIDE` : aucun exercice n'est créé |
 | Second dépôt pour la même session | `409 EXERCICE_DEJA_DEPOSE` : l'exercice existant est inchangé |
 | Note absente, non entière ou hors de [0 ; 20] | `400 NOTE_INVALIDE` |
-| Relecture soumise par l'auteur de l'exercice | `403 AUTO_RELECTURE` |
+| Relecteur attribué identique à l'auteur de l'exercice | `403 AUTO_RELECTURE` |
 | Modification d'une note en état `DEFINITIF` | `409 RELECTURE_DEJA_RENDUE` |
 
 ## Remarque

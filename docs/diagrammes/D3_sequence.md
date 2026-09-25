@@ -1,6 +1,6 @@
 # D3 — Diagramme de séquence : « Marquer sa présence »
 
-Candidate : Tedjou Nguimzi Cyntia — Matricule 265. Référence : EF2, RG1, RG3, H6 (`docs/CAHIER_DES_CHARGES.md`) et `POST /api/presences` (`api/contrat.yaml`).
+Candidate : Tedjou Nguimzi Cyntia — Matricule 265. Référence : EF2, RG1, RG3, H6, H9 (`docs/CAHIER_DES_CHARGES.md`) et `POST /api/presences` (`api/contrat.yaml`).
 
 Le diagramme couvre le cas nominal (`201`) et les deux erreurs métier `409 DEJA_PRESENT` et `410 CODE_EXPIRE`.
 
@@ -19,6 +19,9 @@ sequenceDiagram
     S->>DB: Rechercher la session par code
     DB-->>S: Session trouvée (expirationAt, statut)
     Note over S,DB: Si aucune session ne correspond au code : 400 CODE_INCONNU (hors diagramme)
+    S->>DB: Rechercher l'étudiant (etudiantId)
+    DB-->>S: Étudiant trouvé (promotion)
+    Note over S,DB: Étudiant inconnu ou d'une autre promotion : 400 REQUETE_INVALIDE (H9, hors diagramme)
     S->>DB: Rechercher une présence (sessionId, etudiantId)
     DB-->>S: Résultat de la recherche
 
@@ -42,7 +45,7 @@ sequenceDiagram
 
 ## Notes
 
-- **Ordre des contrôles (H6) :** `CODE_INCONNU`, puis `DEJA_PRESENT`, puis `CODE_EXPIRE`. Un étudiant déjà présent qui ressaisit un code expiré reçoit `409` : c'est l'information la plus utile pour lui.
+- **Ordre des contrôles (H6) :** `CODE_INCONNU`, puis le contrôle de l'étudiant (`REQUETE_INVALIDE` s'il est inconnu ou d'une autre promotion, H9), puis `DEJA_PRESENT`, puis `CODE_EXPIRE`. Un étudiant déjà présent qui ressaisit un code expiré reçoit `409` : c'est l'information la plus utile pour lui.
 - **Envois simultanés :** si deux requêtes identiques passent le contrôle au même instant, la contrainte `UNIQUE (session_id, etudiant_id)` fait échouer la seconde insertion. Cette violation est traduite en `409 DEJA_PRESENT` (ENF3).
 - **Horloge :** « maintenant » est l'heure du serveur en UTC. L'heure du navigateur n'est jamais utilisée (ENF6).
 - **Format d'erreur :** toutes les réponses d'erreur suivent le format unique `{code, message}` (RG12). Le frontend affiche le champ `message`.

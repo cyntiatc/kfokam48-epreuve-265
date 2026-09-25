@@ -6,7 +6,7 @@
 | Matricule | 265 |
 | Épreuve | KFOKAM48 |
 | Étape | Étape 1 — Analyse, spécification et conception |
-| Version | 1.1 — 25/09/2026 (alignement sur le contrat imposé) |
+| Version | 1.2 — 25/09/2026 (ajout de l'hypothèse H9) |
 | Frontend choisi | **React** |
 
 Documents associés : diagrammes `docs/diagrammes/D1_use_cases.md` à `D4_etats.md`, contrat d'API `api/contrat.yaml`.
@@ -73,6 +73,7 @@ Chaque exigence est vérifiée par des critères d'acceptation « Quand… Alors
 - **Critères d'acceptation :**
   - **Quand** l'étudiant saisit un code valide, non expiré, et n'est pas encore présent, **Alors** la présence est enregistrée et le système répond `201` avec `{id, sessionId, etudiantId, source}` (`source = "CODE"`).
   - **Quand** le code ne correspond à aucune session, **Alors** le système répond `400 CODE_INCONNU`.
+  - **Quand** l'étudiant est inconnu ou n'appartient pas à la promotion de la session, **Alors** le système répond `400 REQUETE_INVALIDE` et aucune présence n'est créée (H2, H9).
   - **Quand** l'étudiant est déjà présent à cette session (y compris en cas de double envoi simultané), **Alors** le système répond `409 DEJA_PRESENT` et aucune seconde présence n'est créée.
   - **Quand** le code est saisi après `expirationAt` ou après la clôture de la session, **Alors** le système répond `410 CODE_EXPIRE`.
 
@@ -195,9 +196,10 @@ Les deux réponses sont incompatibles : selon Q15, un second envoi est toujours 
 | H3 | Routes absentes du contrat imposé | Deux besoins n'ont pas de route : la clôture d'une session (EF8, nécessaire à la décision Q10) et la consultation par un relecteur des relectures qui lui sont attribuées (il lui faut l'`id` de la relecture et le lien de l'exercice). Pour respecter le contrat imposé, ces routes **ne sont pas ajoutées** à `api/contrat.yaml`. Proposition à valider avec le formateur : `POST /api/sessions/{id}/cloture` et `GET /api/relectures?relecteurId=`. |
 | H4 | Identification des utilisateurs | Le contrat ne prévoit pas d'authentification. L'étudiant est identifié par l'`etudiantId` transmis dans le corps de `POST /api/presences` et `POST /api/exercices`. `POST /api/sessions` ne reçoit que `titre` et `promotionId` : le formateur n'est pas enregistré. `POST /api/relectures/{id}` ne reçoit que `note` et `commentaire` : l'émetteur n'est pas transmis. Le `403 AUTO_RELECTURE` vérifie donc que le relecteur attribué n'est pas l'auteur de l'exercice. Conséquence acceptée en version 1 : toute personne qui connaît l'`id` d'une relecture peut la soumettre. Identifier réellement l'émetteur demandera une authentification. Promotions et étudiants sont pré-chargés en base. |
 | H5 | Dépôt et présence | Le contrat ne prévoit aucune erreur liée à la présence sur `POST /api/exercices`. Un étudiant de la promotion peut donc déposer un exercice même s'il n'est pas présent. |
-| H6 | Ordre des contrôles de présence | Les contrôles s'enchaînent ainsi : `CODE_INCONNU`, puis `DEJA_PRESENT`, puis `CODE_EXPIRE`. Un étudiant déjà présent qui ressaisit un code expiré est donc informé qu'il est déjà présent. |
+| H6 | Ordre des contrôles de présence | Les contrôles s'enchaînent ainsi : `CODE_INCONNU`, puis le contrôle de l'étudiant (`REQUETE_INVALIDE`, H9), puis `DEJA_PRESENT`, puis `CODE_EXPIRE`. Un étudiant déjà présent qui ressaisit un code expiré est donc informé qu'il est déjà présent. |
 | H7 | Calcul de la moyenne | La moyenne inclut les notes rendues encore modifiables (session ouverte). Le tableau reflète donc l'état courant. |
 | H8 | Relecture rendue après la clôture | Une relecture attribuée mais non rendue au moment de la clôture peut encore être rendue **une seule fois**. Elle est immédiatement définitive : il s'agit d'une première saisie, pas d'une modification. |
+| H9 | Promotion de l'étudiant qui émarge | Le sujet ne dit pas si un étudiant peut émarger à la session d'une autre promotion. Décision : non. L'étudiant doit appartenir à la promotion de la session, sinon `POST /api/presences` renvoie `400 REQUETE_INVALIDE`. Sinon, sa présence n'apparaîtrait dans le tableau récapitulatif d'aucune promotion (RG11), et il deviendrait relecteur éligible (RG7) pour les exercices d'une promotion qui n'est pas la sienne. |
 
 ## 8. Contraintes techniques
 

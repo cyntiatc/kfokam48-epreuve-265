@@ -537,6 +537,46 @@ textarea.champ__saisie {
   text-decoration: line-through;
 }
 
+.compte-a-rebours {
+  margin: -0.25rem 0 1rem;
+}
+
+.compte-a-rebours__texte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.9rem;
+  color: #047857;
+  font-variant-numeric: tabular-nums;
+}
+
+.compte-a-rebours__barre {
+  height: 6px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  background: #d1fae5;
+  border-radius: 999px;
+}
+
+.compte-a-rebours__progression {
+  height: 100%;
+  background: #10b981;
+  border-radius: inherit;
+  transition: width 1s linear;
+}
+
+.compte-a-rebours--bientot .compte-a-rebours__texte {
+  color: #b45309;
+}
+
+.compte-a-rebours--bientot .compte-a-rebours__barre {
+  background: #fef3c7;
+}
+
+.compte-a-rebours--bientot .compte-a-rebours__progression {
+  background: #f59e0b;
+}
+
 /* ==========================================================================
    Tableau récapitulatif
    ========================================================================== */
@@ -631,5 +671,9 @@ textarea.champ__saisie {
   .badge--actif .badge__point,
   .spinner {
     animation: none;
+  }
+
+  .compte-a-rebours__progression {
+    transition: none;
   }
 }

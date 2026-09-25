@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useEstExpire } from '../hooks/useEstExpire.js';
+import { useTempsRestant } from '../hooks/useTempsRestant.js';
 import { IconeCoche, IconeCopier, IconeHorloge } from './Icones.jsx';
 
 const formatDateHeure = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'medium' });
@@ -10,9 +10,13 @@ const LIBELLES_COPIE = {
   echec: 'Copie impossible',
 };
 
+/** En dessous de 2 minutes, le compte à rebours passe en orange pour prévenir le formateur. */
+const SEUIL_ALERTE_MS = 2 * 60 * 1000;
+
 /** Mise en valeur du code de présence d'une session ouverte (réponse 201 de POST /api/sessions). */
 export default function CodeAcces({ session }) {
-  const expire = useEstExpire(session.expirationAt);
+  const restant = useTempsRestant(session.expirationAt);
+  const expire = restant === 0;
   const [etatCopie, setEtatCopie] = useState('attente');
 
   useEffect(() => {
@@ -32,16 +36,20 @@ export default function CodeAcces({ session }) {
     }
   }
 
+  const duree = new Date(session.expirationAt).getTime() - new Date(session.ouvertureAt).getTime();
+
   return (
     <div className={`code-acces${expire ? ' code-acces--expire' : ''}`}>
       <div className="code-acces__entete">
         <span className="code-acces__libelle">Code de présence</span>
-        <span className={`pastille pastille--${expire ? 'expire' : 'valide'}`}>
-          {expire ? 'Expiré' : 'Valable 15 min'}
+        <span className={`pastille pastille--${expire ? 'expire' : 'valide'}`} aria-live="polite">
+          {expire ? 'Expiré' : 'Valide'}
         </span>
       </div>
 
       <p className="code-acces__code" aria-live="polite">{session.code}</p>
+
+      {!expire && <CompteARebours restant={restant} duree={duree} />}
 
       <button type="button" className="bouton bouton--secondaire" onClick={copier}>
         {etatCopie === 'copie' ? <IconeCoche taille={18} /> : <IconeCopier taille={18} />}
@@ -60,4 +68,29 @@ export default function CodeAcces({ session }) {
       </dl>
     </div>
   );
+}
+
+/** RG1 : temps restant avant l'expiration du code (minuteur mm:ss et barre de progression). */
+function CompteARebours({ restant, duree }) {
+  const bientot = restant <= SEUIL_ALERTE_MS;
+  const pourcentage = duree > 0 ? Math.min(100, (restant / duree) * 100) : 0;
+
+  return (
+    <div className={`compte-a-rebours${bientot ? ' compte-a-rebours--bientot' : ''}`}>
+      {/* role="timer" : les lecteurs d'écran n'annoncent pas chaque seconde. */}
+      <p className="compte-a-rebours__texte" role="timer">
+        <IconeHorloge taille={16} />
+        Expire dans <strong>{formaterDuree(restant)}</strong>
+      </p>
+      <div className="compte-a-rebours__barre" aria-hidden="true">
+        <div className="compte-a-rebours__progression" style={{ width: `${pourcentage}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function formaterDuree(millisecondes) {
+  const secondes = Math.ceil(millisecondes / 1000);
+  const minutes = Math.floor(secondes / 60);
+  return `${String(minutes).padStart(2, '0')}:${String(secondes % 60).padStart(2, '0')}`;
 }

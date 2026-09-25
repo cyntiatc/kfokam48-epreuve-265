@@ -50,3 +50,8 @@ export function marquerPresence(code, etudiantId) {
 export function deposerExercice(sessionId, etudiantId, lien) {
   return envoyer('/api/exercices', { sessionId, etudiantId, lien });
 }
+
+/** EF5, EF6 : POST /api/relectures/{id} -> 200 sans corps */
+export function rendreRelecture(relectureId, note, commentaire) {
+  return envoyer(`/api/relectures/${encodeURIComponent(relectureId)}`, { note, commentaire });
+}

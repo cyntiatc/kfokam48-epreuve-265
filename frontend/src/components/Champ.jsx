@@ -1,14 +1,18 @@
 import { useId } from 'react';
 
-/** Champ de formulaire : libellé, saisie et texte d'aide reliés pour l'accessibilité. */
-export default function Champ({ libelle, aide, className = '', ...proprietesSaisie }) {
+/**
+ * Champ de formulaire : libellé, saisie et texte d'aide reliés pour l'accessibilité.
+ * Avec `multiligne`, la saisie est une zone de texte au lieu d'une ligne.
+ */
+export default function Champ({ libelle, aide, multiligne = false, className = '', ...proprietesSaisie }) {
   const id = useId();
   const idAide = `${id}-aide`;
+  const Saisie = multiligne ? 'textarea' : 'input';
 
   return (
     <div className="champ">
       <label className="champ__libelle" htmlFor={id}>{libelle}</label>
-      <input
+      <Saisie
         id={id}
         className={`champ__saisie ${className}`.trim()}
         aria-describedby={aide ? idAide : undefined}

@@ -161,7 +161,7 @@ dd {
    ========================================================================== */
 
 .page {
-  max-width: 36rem;
+  max-width: 40rem;
   margin: 0 auto;
   padding: 2rem 1rem 3rem;
 }
@@ -311,6 +311,11 @@ dd {
   font-size: 1.25rem;
   letter-spacing: 0.3em;
   text-transform: uppercase;
+}
+
+textarea.champ__saisie {
+  min-height: 6rem;
+  resize: vertical;
 }
 
 .champ__aide {

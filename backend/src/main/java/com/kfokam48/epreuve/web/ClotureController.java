@@ -2,11 +2,13 @@ package com.kfokam48.epreuve.web;
 
 import com.kfokam48.epreuve.service.ClotureService;
 import com.kfokam48.epreuve.web.dto.SessionCloturee;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /** EF8 : clôture d'une session (route complémentaire, extension H3). */
+@Tag(name = "Sessions")
 @RestController
 public class ClotureController {
 

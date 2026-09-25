@@ -3,6 +3,7 @@ package com.kfokam48.epreuve.web;
 import com.kfokam48.epreuve.service.RelectureService;
 import com.kfokam48.epreuve.web.dto.RelectureAttribuee;
 import com.kfokam48.epreuve.web.dto.RelectureSoumission;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Tag(name = "Relectures", description = "Consultation et notation des exercices par les pairs")
 @RestController
 @RequestMapping("/api/relectures")
 public class RelectureController {

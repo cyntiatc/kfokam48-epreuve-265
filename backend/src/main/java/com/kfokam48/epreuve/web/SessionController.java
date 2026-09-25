@@ -4,6 +4,7 @@ import com.kfokam48.epreuve.domain.SessionCours;
 import com.kfokam48.epreuve.service.SessionService;
 import com.kfokam48.epreuve.web.dto.SessionCreation;
 import com.kfokam48.epreuve.web.dto.SessionReponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Sessions", description = "Ouverture et clôture des sessions de cours par le formateur")
 @RestController
 @RequestMapping("/api/sessions")
 public class SessionController {

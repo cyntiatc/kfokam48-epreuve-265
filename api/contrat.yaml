@@ -16,13 +16,13 @@ servers:
 security: []
 tags:
   - name: Sessions
-    description: Ouverture des sessions de cours par le formateur
-  - name: Presences
+    description: Ouverture et clôture des sessions de cours par le formateur
+  - name: Présences
     description: Marquage de la présence par code
   - name: Exercices
     description: Dépôt des exercices par les étudiants
   - name: Relectures
-    description: Notation des exercices par les pairs
+    description: Consultation et notation des exercices par les pairs
   - name: Tableau
     description: Tableau récapitulatif du formateur
 
@@ -103,7 +103,7 @@ paths:
 
   /api/presences:
     post:
-      tags: [Presences]
+      tags: [Présences]
       operationId: marquerPresence
       summary: Marquer sa présence avec le code de la session
       description: |

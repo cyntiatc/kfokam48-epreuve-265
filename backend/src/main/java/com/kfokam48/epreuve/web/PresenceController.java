@@ -4,6 +4,7 @@ import com.kfokam48.epreuve.domain.Presence;
 import com.kfokam48.epreuve.service.PresenceService;
 import com.kfokam48.epreuve.web.dto.PresenceCreation;
 import com.kfokam48.epreuve.web.dto.PresenceReponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Présences", description = "Marquage de la présence par code")
 @RestController
 @RequestMapping("/api/presences")
 public class PresenceController {

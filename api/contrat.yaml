@@ -3,8 +3,8 @@ info:
   title: KFOKAM48 - API Présences et Relectures
   version: 1.0.0
   description: |
-    Contrat d'API imposé de l'épreuve KFOKAM48 (5 routes), complété par une route de consultation
-    `GET /api/relectures` marquée comme extension (hypothèse H3, ticket #10).
+    Contrat d'API imposé de l'épreuve KFOKAM48 (5 routes), complété par deux routes marquées comme
+    extensions (hypothèse H3) : `GET /api/relectures` (ticket #10) et `POST /api/sessions/{id}/cloture` (ticket #12).
     Candidate : Tedjou Nguimzi Cyntia - Matricule 265.
 
     Toute erreur est renvoyée au format unique `Erreur` : `{ "code": "...", "message": "..." }`.
@@ -56,6 +56,49 @@ paths:
                 ouvertureAt: '2026-09-28T08:00:00Z'
                 expirationAt: '2026-09-28T08:15:00Z'
         '400':
+          $ref: '#/components/responses/Erreur'
+
+  /api/sessions/{id}/cloture:
+    post:
+      tags: [Sessions]
+      operationId: cloturerSession
+      summary: Clôturer une session (extension H3)
+      description: |
+        Route complémentaire au contrat imposé (hypothèse H3, EF8). Irréversible :
+        - le code de présence n'est plus accepté (410 CODE_EXPIRE, RG1) ;
+        - les notes rendues deviennent définitives (exercices RELU -> DEFINITIF, RG9) ;
+        - les exercices sans relecteur passent SANS_RELECTURE ;
+        - les relectures encore en attente pourront être rendues une fois (H8).
+
+        Erreurs (format `Erreur`) :
+        - 400 REQUETE_INVALIDE : identifiant incorrect ou session inconnue (H2) ;
+        - 409 SESSION_DEJA_CLOTUREE : la session est déjà clôturée.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant de la session à clôturer
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Session clôturée, avec le bilan de la clôture
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionCloturee'
+              example:
+                id: 12
+                statut: CLOTUREE
+                clotureAt: '2026-09-28T11:00:00Z'
+                exercicesDefinitifs: 3
+                exercicesSansRelecture: 1
+                relecturesEnAttente: 2
+        '400':
+          $ref: '#/components/responses/Erreur'
+        '409':
           $ref: '#/components/responses/Erreur'
 
   /api/presences:
@@ -317,6 +360,33 @@ components:
           type: string
           format: date-time
           description: ouvertureAt + 15 minutes (RG1)
+
+    SessionCloturee:
+      type: object
+      description: Bilan de la clôture d'une session (extension H3).
+      required: [id, statut, clotureAt, exercicesDefinitifs, exercicesSansRelecture, relecturesEnAttente]
+      properties:
+        id:
+          type: integer
+          format: int64
+        statut:
+          type: string
+          enum: [CLOTUREE]
+        clotureAt:
+          type: string
+          format: date-time
+        exercicesDefinitifs:
+          type: integer
+          minimum: 0
+          description: Exercices relus dont la note vient de devenir définitive
+        exercicesSansRelecture:
+          type: integer
+          minimum: 0
+          description: Exercices restés sans relecteur
+        relecturesEnAttente:
+          type: integer
+          minimum: 0
+          description: Relectures non rendues, qui pourront encore l'être une fois (H8)
 
     PresenceCreation:
       type: object

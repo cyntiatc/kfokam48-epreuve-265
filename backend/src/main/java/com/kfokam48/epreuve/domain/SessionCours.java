@@ -68,6 +68,15 @@ public class SessionCours {
         return statut == StatutSession.OUVERTE && !instant.isAfter(expirationAt);
     }
 
+    /** EF8 : clôture par le formateur. Irréversible : les notes rendues deviennent définitives (RG9). */
+    public void cloturer(Instant clotureAt) {
+        if (statut != StatutSession.OUVERTE) {
+            throw new IllegalStateException("Seule une session ouverte peut être clôturée.");
+        }
+        this.statut = StatutSession.CLOTUREE;
+        this.clotureAt = clotureAt;
+    }
+
     public Long getId() {
         return id;
     }

@@ -65,6 +65,15 @@ public class Exercice {
         statut = StatutExercice.EN_RELECTURE;
     }
 
+    /** EF8 : session clôturée sans qu'aucun relecteur ait pu être attribué (D4 : DEPOSE -> SANS_RELECTURE). */
+    public void marquerSansRelecture() {
+        if (statut != StatutExercice.DEPOSE) {
+            throw new IllegalStateException(
+                    "Seul un exercice déposé peut passer sans relecture (statut actuel : " + statut + ").");
+        }
+        statut = StatutExercice.SANS_RELECTURE;
+    }
+
     /** EF5 : relecture rendue alors que la session est ouverte (D4 : EN_RELECTURE -> RELU). */
     public void marquerRelu() {
         if (statut != StatutExercice.EN_RELECTURE) {

@@ -45,6 +45,14 @@ export function ouvrirSession(titre, promotionId) {
   return envoyer('/api/sessions', { titre, promotionId });
 }
 
+/**
+ * EF8 (extension H3) : POST /api/sessions/{id}/cloture
+ * -> { id, statut, clotureAt, exercicesDefinitifs, exercicesSansRelecture, relecturesEnAttente }
+ */
+export function cloturerSession(sessionId) {
+  return appeler(`/api/sessions/${encodeURIComponent(sessionId)}/cloture`, { method: 'POST' });
+}
+
 /** EF2 : POST /api/presences -> { id, sessionId, etudiantId, source } */
 export function marquerPresence(code, etudiantId) {
   return envoyer('/api/presences', { code, etudiantId });

@@ -5,14 +5,18 @@ import FormulaireExercice from './components/FormulaireExercice.jsx';
 import FormulairePresence from './components/FormulairePresence.jsx';
 import FormulaireRelecture from './components/FormulaireRelecture.jsx';
 import FormulaireSession from './components/FormulaireSession.jsx';
-import { IconeEtudiant, IconeExercice, IconeFormateur, IconeRelecture } from './components/Icones.jsx';
+import {
+  IconeEtudiant, IconeExercice, IconeFormateur, IconeRelecture, IconeTableau,
+} from './components/Icones.jsx';
 import Onglets, { PanneauOnglet } from './components/Onglets.jsx';
+import TableauRecapitulatif from './components/TableauRecapitulatif.jsx';
 
 const ONGLETS = [
   { id: 'formateur', libelle: 'Espace Formateur', icone: <IconeFormateur taille={18} /> },
   { id: 'etudiant', libelle: 'Espace Étudiant', icone: <IconeEtudiant taille={18} /> },
   { id: 'exercice', libelle: 'Dépôt d’exercice', icone: <IconeExercice taille={18} /> },
   { id: 'relecture', libelle: 'Relecture', icone: <IconeRelecture taille={18} /> },
+  { id: 'tableau', libelle: 'Tableau', icone: <IconeTableau taille={18} /> },
 ];
 
 export default function App() {
@@ -69,6 +73,16 @@ export default function App() {
             sousTitre="Note modifiable jusqu’à la clôture de la session"
           >
             <FormulaireRelecture />
+          </Carte>
+        </PanneauOnglet>
+
+        <PanneauOnglet id="tableau" actif={ongletActif}>
+          <Carte
+            icone={<IconeTableau />}
+            titre="Tableau récapitulatif"
+            sousTitre="Espace formateur · présences, dépôts, moyennes et relectures par étudiant"
+          >
+            <TableauRecapitulatif />
           </Carte>
         </PanneauOnglet>
       </main>

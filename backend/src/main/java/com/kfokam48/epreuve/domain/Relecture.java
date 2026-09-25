@@ -66,6 +66,27 @@ public class Relecture {
         this.attribueeAt = attribueeAt;
     }
 
+    /** EF5 : première soumission de la note et du commentaire. */
+    public void rendre(int note, String commentaire, Instant rendueAt) {
+        if (statut != StatutRelecture.EN_ATTENTE) {
+            throw new IllegalStateException("Cette relecture a déjà été rendue.");
+        }
+        this.note = note;
+        this.commentaire = commentaire;
+        this.statut = StatutRelecture.RENDUE;
+        this.rendueAt = rendueAt;
+    }
+
+    /** EF6 : correction d'une relecture déjà rendue, tant que la session est ouverte (décision Q10, RG9). */
+    public void modifier(int note, String commentaire, Instant modifieeAt) {
+        if (statut != StatutRelecture.RENDUE) {
+            throw new IllegalStateException("Seule une relecture rendue peut être modifiée.");
+        }
+        this.note = note;
+        this.commentaire = commentaire;
+        this.modifieeAt = modifieeAt;
+    }
+
     public Long getId() {
         return id;
     }

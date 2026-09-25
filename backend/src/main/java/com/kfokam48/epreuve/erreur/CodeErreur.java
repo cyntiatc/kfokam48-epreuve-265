@@ -23,6 +23,15 @@ public enum CodeErreur {
     /** L'étudiant a déjà déposé un exercice pour cette session (RG4). */
     EXERCICE_DEJA_DEPOSE(HttpStatus.CONFLICT),
 
+    /** Note absente, non entière ou hors de [0 ; 20] (RG6). */
+    NOTE_INVALIDE(HttpStatus.BAD_REQUEST),
+
+    /** Le relecteur attribué est l'auteur de l'exercice (RG2). */
+    AUTO_RELECTURE(HttpStatus.FORBIDDEN),
+
+    /** Relecture déjà rendue et session clôturée : la note est définitive (RG9). */
+    RELECTURE_DEJA_RENDUE(HttpStatus.CONFLICT),
+
     /** Erreur inattendue côté serveur (ENF2). */
     ERREUR_INTERNE(HttpStatus.INTERNAL_SERVER_ERROR);
 

@@ -65,6 +65,24 @@ public class Exercice {
         statut = StatutExercice.EN_RELECTURE;
     }
 
+    /** EF5 : relecture rendue alors que la session est ouverte (D4 : EN_RELECTURE -> RELU). */
+    public void marquerRelu() {
+        if (statut != StatutExercice.EN_RELECTURE) {
+            throw new IllegalStateException(
+                    "Seul un exercice en relecture peut être marqué relu (statut actuel : " + statut + ").");
+        }
+        statut = StatutExercice.RELU;
+    }
+
+    /** H8 : relecture rendue après la clôture, la note est aussitôt définitive (D4 : EN_RELECTURE -> DEFINITIF). */
+    public void rendreDefinitif() {
+        if (statut != StatutExercice.EN_RELECTURE && statut != StatutExercice.RELU) {
+            throw new IllegalStateException(
+                    "Seul un exercice en relecture ou relu peut devenir définitif (statut actuel : " + statut + ").");
+        }
+        statut = StatutExercice.DEFINITIF;
+    }
+
     public Long getId() {
         return id;
     }

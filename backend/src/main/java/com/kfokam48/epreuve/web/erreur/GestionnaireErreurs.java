@@ -4,6 +4,7 @@ import com.kfokam48.epreuve.erreur.CodeErreur;
 import com.kfokam48.epreuve.erreur.ErreurMetierException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -58,6 +59,9 @@ public class GestionnaireErreurs extends ResponseEntityExceptionHandler {
         }
         if (ex instanceof HttpMessageNotReadableException) {
             return "Le corps de la requête est absent ou mal formé.";
+        }
+        if (ex instanceof TypeMismatchException) {
+            return "Un paramètre de la requête n'a pas le bon format.";
         }
         return "Cette requête n'est pas prise en charge par l'API.";
     }

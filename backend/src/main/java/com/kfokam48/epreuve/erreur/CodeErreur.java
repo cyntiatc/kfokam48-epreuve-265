@@ -17,6 +17,12 @@ public enum CodeErreur {
     /** Le code de présence a expiré ou la session est clôturée (RG1). */
     CODE_EXPIRE(HttpStatus.GONE),
 
+    /** Le lien de l'exercice n'est pas une URL http ou https valide (RG5). */
+    LIEN_INVALIDE(HttpStatus.BAD_REQUEST),
+
+    /** L'étudiant a déjà déposé un exercice pour cette session (RG4). */
+    EXERCICE_DEJA_DEPOSE(HttpStatus.CONFLICT),
+
     /** Erreur inattendue côté serveur (ENF2). */
     ERREUR_INTERNE(HttpStatus.INTERNAL_SERVER_ERROR);
 

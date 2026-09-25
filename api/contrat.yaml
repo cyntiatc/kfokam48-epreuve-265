@@ -3,7 +3,8 @@ info:
   title: KFOKAM48 - API Présences et Relectures
   version: 1.0.0
   description: |
-    Contrat d'API imposé de l'épreuve KFOKAM48 (5 routes).
+    Contrat d'API imposé de l'épreuve KFOKAM48 (5 routes), complété par une route de consultation
+    `GET /api/relectures` marquée comme extension (hypothèse H3, ticket #10).
     Candidate : Tedjou Nguimzi Cyntia - Matricule 265.
 
     Toute erreur est renvoyée au format unique `Erreur` : `{ "code": "...", "message": "..." }`.
@@ -127,6 +128,48 @@ paths:
         '400':
           $ref: '#/components/responses/Erreur'
         '409':
+          $ref: '#/components/responses/Erreur'
+
+  /api/relectures:
+    get:
+      tags: [Relectures]
+      operationId: listerRelecturesAttribuees
+      summary: Lister les relectures attribuées à un relecteur (extension H3)
+      description: |
+        Route complémentaire au contrat imposé (hypothèse H3) : elle donne au relecteur l'identifiant
+        de ses relectures et le lien des exercices à relire. Les relectures en attente viennent en premier,
+        puis de la plus récente à la plus ancienne. L'auteur de l'exercice n'est pas communiqué.
+
+        Erreurs (format `Erreur`) :
+        - 400 REQUETE_INVALIDE : relecteurId manquant ou incorrect, ou étudiant inconnu (H2).
+      parameters:
+        - name: relecteurId
+          in: query
+          required: true
+          description: Identifiant de l'étudiant relecteur
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Relectures attribuées au relecteur (liste vide s'il n'en a aucune)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RelectureAttribuee'
+              example:
+                - id: 7
+                  sessionId: 12
+                  sessionTitre: Spring Boot - API REST
+                  lien: https://github.com/exemple/exercice-session-12
+                  statut: EN_ATTENTE
+                  note: null
+                  commentaire: null
+                  modifiable: true
+        '400':
           $ref: '#/components/responses/Erreur'
 
   /api/relectures/{id}:
@@ -339,6 +382,41 @@ components:
       type: string
       description: Cycle de vie d'un exercice (diagramme D4)
       enum: [DEPOSE, EN_RELECTURE, RELU, DEFINITIF, SANS_RELECTURE]
+
+    RelectureAttribuee:
+      type: object
+      description: Relecture attribuée à un relecteur (extension H3).
+      required: [id, sessionId, sessionTitre, lien, statut, note, commentaire, modifiable]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identifiant à utiliser dans POST /api/relectures/{id}
+        sessionId:
+          type: integer
+          format: int64
+        sessionTitre:
+          type: string
+        lien:
+          type: string
+          description: Lien de l'exercice à relire (URL http ou https, RG5)
+        statut:
+          type: string
+          enum: [EN_ATTENTE, RENDUE]
+        note:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 20
+          description: Note rendue, null tant que la relecture est en attente
+        commentaire:
+          type: string
+          nullable: true
+        modifiable:
+          type: boolean
+          description: |
+            Vrai si la relecture peut encore être envoyée : en attente (y compris après la clôture, H8),
+            ou rendue dans une session encore ouverte (décision Q10, RG9).
 
     RelectureSoumission:
       type: object

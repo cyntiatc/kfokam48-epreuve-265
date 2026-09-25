@@ -55,6 +55,11 @@ export function deposerExercice(sessionId, etudiantId, lien) {
   return envoyer('/api/exercices', { sessionId, etudiantId, lien });
 }
 
+/** H3 (extension) : GET /api/relectures?relecteurId= -> [{ id, sessionId, sessionTitre, lien, statut, note, commentaire, modifiable }] */
+export function listerRelectures(relecteurId) {
+  return appeler(`/api/relectures?relecteurId=${encodeURIComponent(relecteurId)}`);
+}
+
 /** EF5, EF6 : POST /api/relectures/{id} -> 200 sans corps */
 export function rendreRelecture(relectureId, note, commentaire) {
   return envoyer(`/api/relectures/${encodeURIComponent(relectureId)}`, { note, commentaire });

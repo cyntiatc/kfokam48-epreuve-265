@@ -66,6 +66,14 @@ public class Relecture {
         this.attribueeAt = attribueeAt;
     }
 
+    /**
+     * Le relecteur peut-il encore envoyer sa relecture ? Oui si elle est en attente (y compris après la clôture, H8),
+     * ou si elle est rendue et que la session est encore ouverte (décision Q10, RG9).
+     */
+    public boolean peutEtreSoumise() {
+        return statut == StatutRelecture.EN_ATTENTE || exercice.getSession().getStatut() == StatutSession.OUVERTE;
+    }
+
     /** EF5 : première soumission de la note et du commentaire. */
     public void rendre(int note, String commentaire, Instant rendueAt) {
         if (statut != StatutRelecture.EN_ATTENTE) {

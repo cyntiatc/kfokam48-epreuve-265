@@ -6,6 +6,7 @@ import com.kfokam48.epreuve.domain.StatutRelecture;
 import com.kfokam48.epreuve.domain.StatutSession;
 import com.kfokam48.epreuve.erreur.CodeErreur;
 import com.kfokam48.epreuve.erreur.ErreurMetierException;
+import com.kfokam48.epreuve.repository.EtudiantRepository;
 import com.kfokam48.epreuve.repository.RelectureRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 public class RelectureService {
@@ -21,11 +24,30 @@ public class RelectureService {
     static final BigDecimal NOTE_MAX = BigDecimal.valueOf(20);
 
     private final RelectureRepository relectureRepository;
+    private final EtudiantRepository etudiantRepository;
     private final Clock horloge;
 
-    public RelectureService(RelectureRepository relectureRepository, Clock horloge) {
+    public RelectureService(RelectureRepository relectureRepository, EtudiantRepository etudiantRepository,
+                            Clock horloge) {
         this.relectureRepository = relectureRepository;
+        this.etudiantRepository = etudiantRepository;
         this.horloge = horloge;
+    }
+
+    /**
+     * H3 (route complémentaire) : relectures attribuées à un relecteur, celles en attente d'abord,
+     * puis de la plus récente à la plus ancienne. Relecteur inconnu : 400 REQUETE_INVALIDE (H2).
+     */
+    @Transactional(readOnly = true)
+    public List<Relecture> relecturesAttribuees(Long relecteurId) {
+        if (!etudiantRepository.existsById(relecteurId)) {
+            throw new ErreurMetierException(CodeErreur.REQUETE_INVALIDE,
+                    "Aucun étudiant ne correspond à l'identifiant " + relecteurId + ".");
+        }
+        // Tri stable : l'ordre par date d'attribution de la requête est conservé dans chaque groupe.
+        return relectureRepository.findByRelecteurIdOrderByAttribueeAtDesc(relecteurId).stream()
+                .sorted(Comparator.comparing(relecture -> relecture.getStatut() != StatutRelecture.EN_ATTENTE))
+                .toList();
     }
 
     /**

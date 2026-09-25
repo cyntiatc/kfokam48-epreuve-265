@@ -12,7 +12,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.List;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -96,6 +100,36 @@ class RelectureIntegrationTest {
         rendre(relectureId, "20", "Je me note moi-même.")
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("AUTO_RELECTURE"));
+    }
+
+    @Test
+    void consulterSesRelectures_donneLIdentifiantEtLeLienPuisSuitLEtatDeLaRelecture() throws Exception {
+        RelectureAttribuee attribuee = preparerRelectureAttribuee();
+
+        // Avant la notation : Brice voit la relecture en attente et le lien de l'exercice d'Alice.
+        assertThat(relectureVueParBrice(attribuee.relectureId()))
+                .containsEntry("statut", "EN_ATTENTE")
+                .containsEntry("lien", "https://exemple.com/exercice-1")
+                .containsEntry("modifiable", true);
+
+        rendre(attribuee.relectureId(), "15", "Bon travail.").andExpect(status().isOk());
+        assertThat(relectureVueParBrice(attribuee.relectureId()))
+                .containsEntry("statut", "RENDUE")
+                .containsEntry("note", 15)
+                .containsEntry("modifiable", true);
+
+        cloturer(attribuee.sessionId());
+        assertThat(relectureVueParBrice(attribuee.relectureId())).containsEntry("modifiable", false);
+    }
+
+    /** Ligne de GET /api/relectures?relecteurId=2 correspondant à la relecture (Brice a aussi celles des autres tests). */
+    private Map<String, Object> relectureVueParBrice(long relectureId) throws Exception {
+        String reponse = mockMvc.perform(get("/api/relectures").param("relecteurId", "2"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<Map<String, Object>> lignes = JsonPath.read(reponse, "$[?(@.id == " + relectureId + ")]");
+        assertThat(lignes).hasSize(1);
+        return lignes.get(0);
     }
 
     private record SessionOuverte(long id, String code) {

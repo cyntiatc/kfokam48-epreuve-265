@@ -72,7 +72,8 @@ export default function App() {
             titre="Relire l’exercice d’un pair"
             sousTitre="Note modifiable jusqu’à la clôture de la session"
           >
-            <FormulaireRelecture />
+            {/* Le relecteur est un étudiant présent : son identifiant est repris du dernier émargement. */}
+            <FormulaireRelecture key={presence?.id ?? 'sans-presence'} etudiantIdInitial={presence?.etudiantId} />
           </Carte>
         </PanneauOnglet>
 

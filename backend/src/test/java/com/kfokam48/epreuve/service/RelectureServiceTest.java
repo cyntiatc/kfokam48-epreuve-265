@@ -10,6 +10,7 @@ import com.kfokam48.epreuve.domain.StatutRelecture;
 import com.kfokam48.epreuve.domain.StatutSession;
 import com.kfokam48.epreuve.erreur.CodeErreur;
 import com.kfokam48.epreuve.erreur.ErreurMetierException;
+import com.kfokam48.epreuve.repository.EtudiantRepository;
 import com.kfokam48.epreuve.repository.RelectureRepository;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,21 +44,24 @@ class RelectureServiceTest {
 
     @Mock
     private RelectureRepository relectureRepository;
+    @Mock
+    private EtudiantRepository etudiantRepository;
 
     private RelectureService service;
     private SessionCours session;
     private Etudiant alice;
+    private Etudiant brice;
     private Exercice exercice;
     private Relecture relecture;
 
     @BeforeEach
     void setUp() {
-        service = new RelectureService(relectureRepository, Clock.fixed(MAINTENANT, ZoneOffset.UTC));
+        service = new RelectureService(relectureRepository, etudiantRepository, Clock.fixed(MAINTENANT, ZoneOffset.UTC));
         Promotion promotion = avecId(new Promotion("L3 GL"), 1L);
         session = avecId(new SessionCours(promotion, "Spring Boot", "K7P2QX",
                 Instant.parse("2026-09-28T08:00:00Z")), 12L);
         alice = avecId(new Etudiant("L3GL-001", "Mbarga", "Alice", "alice.mbarga@example.com", promotion), 1L);
-        Etudiant brice = avecId(new Etudiant("L3GL-002", "Nkoulou", "Brice", "brice.nkoulou@example.com", promotion), 2L);
+        brice = avecId(new Etudiant("L3GL-002", "Nkoulou", "Brice", "brice.nkoulou@example.com", promotion), 2L);
         // Exercice d'Alice attribué à Brice (EF4).
         exercice = avecId(new Exercice(session, alice, "https://exemple.com/alice",
                 Instant.parse("2026-09-28T09:00:00Z")), 58L);
@@ -154,6 +159,35 @@ class RelectureServiceTest {
         verifierErreur(() -> service.rendreRelecture(8L, new BigDecimal("20"), COMMENTAIRE),
                 CodeErreur.AUTO_RELECTURE);
         assertThat(autoRelecture.getStatut()).isEqualTo(StatutRelecture.EN_ATTENTE);
+    }
+
+    @Test
+    void relecturesAttribuees_placeLesRelecturesEnAttenteAvantLesRendues() {
+        Relecture rendueRecente = relectureDeBrice(20L, "2026-09-28T09:50:00Z");
+        rendueRecente.rendre(14, COMMENTAIRE, MAINTENANT);
+        Relecture enAttenteRecente = relectureDeBrice(21L, "2026-09-28T09:40:00Z");
+        Relecture enAttenteAncienne = relectureDeBrice(22L, "2026-09-28T09:10:00Z");
+        when(etudiantRepository.existsById(2L)).thenReturn(true);
+        // Le dépôt renvoie les relectures de la plus récente à la plus ancienne.
+        when(relectureRepository.findByRelecteurIdOrderByAttribueeAtDesc(2L))
+                .thenReturn(List.of(rendueRecente, enAttenteRecente, enAttenteAncienne));
+
+        assertThat(service.relecturesAttribuees(2L))
+                .containsExactly(enAttenteRecente, enAttenteAncienne, rendueRecente);
+    }
+
+    @Test
+    void relecturesAttribuees_relecteurInconnu_refuseAvecRequeteInvalide() {
+        when(etudiantRepository.existsById(99L)).thenReturn(false);
+
+        verifierErreur(() -> service.relecturesAttribuees(99L), CodeErreur.REQUETE_INVALIDE);
+        verifyNoInteractions(relectureRepository);
+    }
+
+    private Relecture relectureDeBrice(Long id, String attribueeAt) {
+        Exercice exerciceDAlice = avecId(new Exercice(session, alice, "https://exemple.com/alice-" + id,
+                Instant.parse(attribueeAt)), 100L + id);
+        return avecId(new Relecture(exerciceDAlice, brice, Instant.parse(attribueeAt)), id);
     }
 
     private void trouverLaRelecture() {

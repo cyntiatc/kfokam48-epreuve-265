@@ -161,7 +161,7 @@ dd {
    ========================================================================== */
 
 .page {
-  max-width: 30rem;
+  max-width: 36rem;
   margin: 0 auto;
   padding: 2rem 1rem 3rem;
 }
@@ -182,10 +182,12 @@ dd {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.6rem 1rem;
+  padding: 0.6rem 0.75rem;
   font: inherit;
   font-size: 0.9rem;
   font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
   color: var(--couleur-texte-doux);
   background: transparent;
   border: 1px solid transparent;
@@ -209,6 +211,18 @@ dd {
 .onglet:focus-visible {
   outline: 2px solid transparent;
   box-shadow: 0 0 0 3px var(--couleur-anneau);
+}
+
+/* Sur téléphone, les trois onglets tiennent sur une ligne sans leurs icônes. */
+@media (max-width: 30rem) {
+  .onglet {
+    padding: 0.55rem 0.4rem;
+    font-size: 0.8rem;
+  }
+
+  .onglet svg {
+    display: none;
+  }
 }
 
 .carte {

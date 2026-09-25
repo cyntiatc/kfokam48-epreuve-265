@@ -45,3 +45,8 @@ export function ouvrirSession(titre, promotionId) {
 export function marquerPresence(code, etudiantId) {
   return envoyer('/api/presences', { code, etudiantId });
 }
+
+/** EF3 : POST /api/exercices -> { id, statut } */
+export function deposerExercice(sessionId, etudiantId, lien) {
+  return envoyer('/api/exercices', { sessionId, etudiantId, lien });
+}

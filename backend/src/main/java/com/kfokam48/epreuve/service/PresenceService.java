@@ -46,7 +46,7 @@ public class PresenceService {
         Etudiant etudiant = etudiantRepository.findById(etudiantId)
                 .orElseThrow(() -> new ErreurMetierException(CodeErreur.REQUETE_INVALIDE,
                         "Aucun étudiant ne correspond à l'identifiant " + etudiantId + "."));
-        if (!etudiant.getPromotion().getId().equals(session.getPromotion().getId())) {
+        if (!etudiant.estDansLaPromotion(session.getPromotion())) {
             throw new ErreurMetierException(CodeErreur.REQUETE_INVALIDE,
                     "L'étudiant n'appartient pas à la promotion de cette session.");
         }

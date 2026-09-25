@@ -47,6 +47,11 @@ public class Etudiant {
         this.promotion = promotion;
     }
 
+    /** H5, H9 : un étudiant n'agit que sur les sessions de sa promotion. */
+    public boolean estDansLaPromotion(Promotion autre) {
+        return promotion.getId().equals(autre.getId());
+    }
+
     public Long getId() {
         return id;
     }

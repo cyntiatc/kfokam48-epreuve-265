@@ -4,7 +4,7 @@ import Banniere from './Banniere.jsx';
 import Champ from './Champ.jsx';
 
 /** EF2 : l'étudiant émarge avec le code de présence communiqué par le formateur. */
-export default function FormulairePresence() {
+export default function FormulairePresence({ onPresenceEnregistree }) {
   const [code, setCode] = useState('');
   const [etudiantId, setEtudiantId] = useState('');
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
@@ -17,7 +17,9 @@ export default function FormulairePresence() {
     setErreur(null);
     setPresence(null);
     try {
-      setPresence(await marquerPresence(code.trim(), Number(etudiantId)));
+      const nouvellePresence = await marquerPresence(code.trim(), Number(etudiantId));
+      setPresence(nouvellePresence);
+      onPresenceEnregistree?.(nouvellePresence);
     } catch (e) {
       setErreur(e);
     } finally {

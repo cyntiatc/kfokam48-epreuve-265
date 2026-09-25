@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import Carte from './components/Carte.jsx';
 import EnTete from './components/EnTete.jsx';
+import FormulaireExercice from './components/FormulaireExercice.jsx';
 import FormulairePresence from './components/FormulairePresence.jsx';
 import FormulaireSession from './components/FormulaireSession.jsx';
-import { IconeEtudiant, IconeFormateur } from './components/Icones.jsx';
+import { IconeEtudiant, IconeExercice, IconeFormateur } from './components/Icones.jsx';
 import Onglets, { PanneauOnglet } from './components/Onglets.jsx';
 
 const ONGLETS = [
   { id: 'formateur', libelle: 'Espace Formateur', icone: <IconeFormateur taille={18} /> },
   { id: 'etudiant', libelle: 'Espace Étudiant', icone: <IconeEtudiant taille={18} /> },
+  { id: 'exercice', libelle: 'Dépôt d’exercice', icone: <IconeExercice taille={18} /> },
 ];
 
 export default function App() {
   const [session, setSession] = useState(null);
+  const [presence, setPresence] = useState(null);
   const [ongletActif, setOngletActif] = useState('formateur');
 
   return (
@@ -38,7 +41,22 @@ export default function App() {
             titre="Émarger"
             sousTitre="Saisissez le code communiqué par le formateur"
           >
-            <FormulairePresence />
+            <FormulairePresence onPresenceEnregistree={setPresence} />
+          </Carte>
+        </PanneauOnglet>
+
+        <PanneauOnglet id="exercice" actif={ongletActif}>
+          <Carte
+            icone={<IconeExercice />}
+            titre="Déposer un exercice"
+            sousTitre="Espace étudiant · le lien de votre travail pour la session"
+          >
+            {/* La clé recrée le formulaire à chaque émargement, pour le pré-remplir avec la nouvelle présence. */}
+            <FormulaireExercice
+              key={presence?.id ?? 'sans-presence'}
+              sessionIdInitial={presence?.sessionId}
+              etudiantIdInitial={presence?.etudiantId}
+            />
           </Carte>
         </PanneauOnglet>
       </main>

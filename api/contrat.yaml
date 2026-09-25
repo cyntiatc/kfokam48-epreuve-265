@@ -1,0 +1,457 @@
+openapi: 3.0.3
+info:
+  title: KFOKAM48 - API Présences et Relectures
+  version: 1.0.0
+  description: |
+    Contrat d'API imposé de l'épreuve KFOKAM48 (5 routes).
+    Candidate : Tedjou Nguimzi Cyntia - Matricule 265.
+
+    Toute erreur est renvoyée au format unique `Erreur` : `{ "code": "...", "message": "..." }`.
+    Les règles de gestion (RG) et hypothèses (H) citées sont définies dans `docs/CAHIER_DES_CHARGES.md`.
+servers:
+  - url: http://localhost:8080
+    description: Backend Spring Boot en local
+# Aucune authentification en version 1 : les identifiants sont transmis dans les requêtes (H4).
+security: []
+tags:
+  - name: Sessions
+    description: Ouverture des sessions de cours par le formateur
+  - name: Presences
+    description: Marquage de la présence par code
+  - name: Exercices
+    description: Dépôt des exercices par les étudiants
+  - name: Relectures
+    description: Notation des exercices par les pairs
+  - name: Tableau
+    description: Tableau récapitulatif du formateur
+
+paths:
+  /api/sessions:
+    post:
+      tags: [Sessions]
+      operationId: ouvrirSession
+      summary: Ouvrir une session de cours et obtenir un code de présence
+      description: Crée une session au statut OUVERTE. Le code est valable 15 minutes à partir de l'ouverture (RG1).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCreation'
+      responses:
+        '201':
+          description: Session ouverte
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+              example:
+                id: 12
+                code: K7P2QX
+                ouvertureAt: '2026-09-28T08:00:00Z'
+                expirationAt: '2026-09-28T08:15:00Z'
+        '400':
+          description: Requête invalide (champ manquant ou incorrect, promotion ou formateur inconnu - H2)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+              example:
+                code: REQUETE_INVALIDE
+                message: Le champ promotionId est obligatoire.
+
+  /api/presences:
+    post:
+      tags: [Presences]
+      operationId: marquerPresence
+      summary: Marquer sa présence avec le code de la session
+      description: |
+        Contrôles effectués dans cet ordre (H6) :
+        1. le code correspond à une session, sinon 400 CODE_INCONNU ;
+        2. l'étudiant n'est pas déjà présent, sinon 409 DEJA_PRESENT (RG3) ;
+        3. le code n'est pas expiré et la session n'est pas clôturée, sinon 410 CODE_EXPIRE (RG1).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PresenceCreation'
+      responses:
+        '201':
+          description: Présence enregistrée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Presence'
+              example:
+                id: 340
+                sessionId: 12
+                etudiantId: 265
+                source: CODE
+        '400':
+          description: Code de présence inconnu, ou requête invalide (H2)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+              examples:
+                codeInconnu:
+                  summary: Aucune session ne correspond au code
+                  value:
+                    code: CODE_INCONNU
+                    message: Aucune session ne correspond au code saisi.
+                requeteInvalide:
+                  summary: Champ manquant ou étudiant inconnu
+                  value:
+                    code: REQUETE_INVALIDE
+                    message: Le champ etudiantId est obligatoire.
+        '409':
+          description: L'étudiant est déjà présent à cette session (RG3)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+              example:
+                code: DEJA_PRESENT
+                message: Votre présence à cette session est déjà enregistrée.
+        '410':
+          description: Le code a expiré (15 minutes dépassées) ou la session est clôturée (RG1)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+              example:
+                code: CODE_EXPIRE
+                message: Ce code de présence a expiré.
+
+  /api/exercices:
+    post:
+      tags: [Exercices]
+      operationId: deposerExercice
+      summary: Déposer le lien de son exercice pour une session
+      description: |
+        Un seul dépôt par étudiant et par session (RG4). Le système tente aussitôt d'attribuer un relecteur (RG8) :
+        le statut renvoyé est EN_RELECTURE si un relecteur a été attribué, DEPOSE sinon.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciceDepot'
+      responses:
+        '201':
+          description: Exercice déposé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciceDepose'
+              example:
+                id: 58
+                statut: EN_RELECTURE
+        '400':
+          description: Lien invalide (RG5), ou requête invalide (H2)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+              examples:
+                lienInvalide:
+                  summary: Le lien n'est pas une URL http(s) valide
+                  value:
+                    code: LIEN_INVALIDE
+                    message: Le lien doit être une URL http ou https valide.
+                requeteInvalide:
+                  summary: Champ manquant, session ou étudiant inconnu
+                  value:
+                    code: REQUETE_INVALIDE
+                    message: Le champ sessionId est obligatoire.
+        '409':
+          description: L'étudiant a déjà déposé un exercice pour cette session (RG4)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+              example:
+                code: EXERCICE_DEJA_DEPOSE
+                message: Vous avez déjà déposé un exercice pour cette session.
+
+  /api/relectures/{id}:
+    post:
+      tags: [Relectures]
+      operationId: rendreRelecture
+      summary: Rendre (ou modifier avant clôture) la relecture d'un exercice
+      description: |
+        Première soumission : la relecture passe à RENDUE.
+        Nouvelle soumission : acceptée tant que la session est OUVERTE (décision Q10, RG9),
+        refusée en 409 RELECTURE_DEJA_RENDUE une fois la session clôturée.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Identifiant de la relecture attribuée
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelectureSoumission'
+      responses:
+        '200':
+          description: Relecture enregistrée (première soumission, ou modification avant la clôture)
+        '400':
+          description: Note invalide (RG6), ou requête invalide (H2)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+              examples:
+                noteInvalide:
+                  summary: Note absente, non entière ou hors de [0 ; 20]
+                  value:
+                    code: NOTE_INVALIDE
+                    message: La note doit être un entier compris entre 0 et 20.
+                requeteInvalide:
+                  summary: Commentaire manquant ou relecture inconnue
+                  value:
+                    code: REQUETE_INVALIDE
+                    message: Le commentaire est obligatoire.
+        '403':
+          description: Le relecteur est l'auteur de l'exercice (RG2)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+              example:
+                code: AUTO_RELECTURE
+                message: Vous ne pouvez pas relire votre propre exercice.
+        '409':
+          description: Relecture déjà rendue et session clôturée, la note est définitive (RG9)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+              example:
+                code: RELECTURE_DEJA_RENDUE
+                message: La session est clôturée, cette relecture ne peut plus être modifiée.
+
+  /api/tableau:
+    get:
+      tags: [Tableau]
+      operationId: consulterTableau
+      summary: Consulter le tableau récapitulatif d'une promotion
+      description: Une ligne par étudiant de la promotion, y compris sans activité (calculs définis par RG11).
+      parameters:
+        - name: promotionId
+          in: query
+          required: true
+          description: Identifiant de la promotion
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Tableau récapitulatif de la promotion
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LigneTableau'
+              example:
+                - etudiantId: 265
+                  nom: Tedjou Nguimzi Cyntia
+                  presences: 4
+                  exercicesDeposes: 3
+                  moyenne: 14.5
+                  relecturesEnAttente: 1
+                - etudiantId: 266
+                  nom: Exemple Etudiant
+                  presences: 1
+                  exercicesDeposes: 0
+                  moyenne: null
+                  relecturesEnAttente: 0
+        '404':
+          description: Promotion inconnue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+              example:
+                code: PROMOTION_INCONNUE
+                message: Aucune promotion ne correspond à l'identifiant 99.
+
+components:
+  schemas:
+    Erreur:
+      type: object
+      description: |
+        Format d'erreur unique de l'API (RG12). Codes utilisés : REQUETE_INVALIDE, CODE_INCONNU, DEJA_PRESENT,
+        CODE_EXPIRE, LIEN_INVALIDE, EXERCICE_DEJA_DEPOSE, NOTE_INVALIDE, AUTO_RELECTURE,
+        RELECTURE_DEJA_RENDUE, PROMOTION_INCONNUE.
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: Code d'erreur métier stable, exploitable par le frontend
+          example: CODE_EXPIRE
+        message:
+          type: string
+          description: Message lisible en français, destiné à l'utilisateur
+          example: Ce code de présence a expiré.
+
+    SessionCreation:
+      type: object
+      required: [promotionId, formateurId, titre]
+      properties:
+        promotionId:
+          type: integer
+          format: int64
+          example: 3
+        formateurId:
+          type: integer
+          format: int64
+          example: 7
+        titre:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: Spring Boot - API REST
+
+    Session:
+      type: object
+      required: [id, code, ouvertureAt, expirationAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        code:
+          type: string
+          pattern: '^[A-Z0-9]{6}$'
+          description: Code de présence unique (RG10)
+        ouvertureAt:
+          type: string
+          format: date-time
+        expirationAt:
+          type: string
+          format: date-time
+          description: ouvertureAt + 15 minutes (RG1)
+
+    PresenceCreation:
+      type: object
+      required: [code, etudiantId]
+      properties:
+        code:
+          type: string
+          minLength: 1
+          description: Code saisi par l'étudiant, insensible à la casse (RG10)
+          example: K7P2QX
+        etudiantId:
+          type: integer
+          format: int64
+          example: 265
+
+    Presence:
+      type: object
+      required: [id, sessionId, etudiantId, source]
+      properties:
+        id:
+          type: integer
+          format: int64
+        sessionId:
+          type: integer
+          format: int64
+        etudiantId:
+          type: integer
+          format: int64
+        source:
+          type: string
+          enum: [CODE]
+          description: Origine de la présence. Seule valeur en version 1 - CODE, saisie du code par l'étudiant (H1).
+
+    ExerciceDepot:
+      type: object
+      required: [sessionId, etudiantId, lien]
+      properties:
+        sessionId:
+          type: integer
+          format: int64
+          example: 12
+        etudiantId:
+          type: integer
+          format: int64
+          example: 265
+        lien:
+          type: string
+          maxLength: 2048
+          description: URL absolue http ou https (RG5), sinon 400 LIEN_INVALIDE
+          example: https://github.com/exemple/exercice-session-12
+
+    ExerciceDepose:
+      type: object
+      required: [id, statut]
+      properties:
+        id:
+          type: integer
+          format: int64
+        statut:
+          $ref: '#/components/schemas/StatutExercice'
+
+    StatutExercice:
+      type: string
+      description: Cycle de vie d'un exercice (diagramme D4)
+      enum: [DEPOSE, EN_RELECTURE, RELU, DEFINITIF, SANS_RELECTURE]
+
+    RelectureSoumission:
+      type: object
+      required: [relecteurId, note, commentaire]
+      properties:
+        relecteurId:
+          type: integer
+          format: int64
+          description: Étudiant qui rend la relecture. S'il est l'auteur de l'exercice, 403 AUTO_RELECTURE (RG2).
+          example: 266
+        note:
+          type: integer
+          minimum: 0
+          maximum: 20
+          description: Note entière de 0 à 20 (RG6), sinon 400 NOTE_INVALIDE
+          example: 15
+        commentaire:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          example: Code clair et bien structuré. Il manque la gestion des erreurs.
+
+    LigneTableau:
+      type: object
+      required: [etudiantId, nom, presences, exercicesDeposes, moyenne, relecturesEnAttente]
+      properties:
+        etudiantId:
+          type: integer
+          format: int64
+        nom:
+          type: string
+        presences:
+          type: integer
+          minimum: 0
+          description: Nombre de sessions de la promotion où l'étudiant est présent
+        exercicesDeposes:
+          type: integer
+          minimum: 0
+          description: Nombre d'exercices déposés par l'étudiant
+        moyenne:
+          type: number
+          format: double
+          nullable: true
+          minimum: 0
+          maximum: 20
+          description: Moyenne des notes reçues, arrondie à 2 décimales, null si aucune note (RG11, H7)
+        relecturesEnAttente:
+          type: integer
+          minimum: 0
+          description: Relectures attribuées à l'étudiant et non encore rendues

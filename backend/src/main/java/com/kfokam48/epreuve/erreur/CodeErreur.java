@@ -32,6 +32,9 @@ public enum CodeErreur {
     /** Relecture déjà rendue et session clôturée : la note est définitive (RG9). */
     RELECTURE_DEJA_RENDUE(HttpStatus.CONFLICT),
 
+    /** Aucune promotion ne correspond à l'identifiant demandé (EF7). */
+    PROMOTION_INCONNUE(HttpStatus.NOT_FOUND),
+
     /** Erreur inattendue côté serveur (ENF2). */
     ERREUR_INTERNE(HttpStatus.INTERNAL_SERVER_ERROR);
 

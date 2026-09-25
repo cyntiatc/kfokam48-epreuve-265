@@ -9,14 +9,10 @@ export class ErreurApi extends Error {
   }
 }
 
-async function envoyer(chemin, corps) {
+async function appeler(chemin, options = {}) {
   let reponse;
   try {
-    reponse = await fetch(chemin, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(corps),
-    });
+    reponse = await fetch(chemin, options);
   } catch {
     throw new ErreurApi('SERVEUR_INJOIGNABLE',
       'Impossible de joindre le serveur. Vérifiez votre connexion.', 0);
@@ -34,6 +30,14 @@ async function envoyer(chemin, corps) {
       reponse.status);
   }
   return donnees;
+}
+
+function envoyer(chemin, corps) {
+  return appeler(chemin, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(corps),
+  });
 }
 
 /** EF1 : POST /api/sessions -> { id, code, ouvertureAt, expirationAt } */
@@ -54,4 +58,9 @@ export function deposerExercice(sessionId, etudiantId, lien) {
 /** EF5, EF6 : POST /api/relectures/{id} -> 200 sans corps */
 export function rendreRelecture(relectureId, note, commentaire) {
   return envoyer(`/api/relectures/${encodeURIComponent(relectureId)}`, { note, commentaire });
+}
+
+/** EF7 : GET /api/tableau?promotionId= -> [{ etudiantId, nom, presences, exercicesDeposes, moyenne, relecturesEnAttente }] */
+export function consulterTableau(promotionId) {
+  return appeler(`/api/tableau?promotionId=${encodeURIComponent(promotionId)}`);
 }

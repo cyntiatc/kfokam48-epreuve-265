@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -62,6 +63,9 @@ public class GestionnaireErreurs extends ResponseEntityExceptionHandler {
         }
         if (ex instanceof TypeMismatchException) {
             return "Un paramètre de la requête n'a pas le bon format.";
+        }
+        if (ex instanceof MissingServletRequestParameterException manquant) {
+            return "Le paramètre " + manquant.getParameterName() + " est obligatoire.";
         }
         return "Cette requête n'est pas prise en charge par l'API.";
     }

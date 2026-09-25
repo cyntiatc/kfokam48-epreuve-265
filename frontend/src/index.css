@@ -161,7 +161,7 @@ dd {
    ========================================================================== */
 
 .page {
-  max-width: 40rem;
+  max-width: 44rem;
   margin: 0 auto;
   padding: 2rem 1rem 3rem;
 }
@@ -213,7 +213,7 @@ dd {
   box-shadow: 0 0 0 3px var(--couleur-anneau);
 }
 
-/* Sur téléphone, les trois onglets tiennent sur une ligne sans leurs icônes. */
+/* Sur téléphone, les onglets tiennent sur une ligne sans leurs icônes. */
 @media (max-width: 30rem) {
   .onglet {
     padding: 0.55rem 0.4rem;
@@ -535,6 +535,80 @@ textarea.champ__saisie {
 .code-acces--expire .code-acces__code {
   color: #94a3b8;
   text-decoration: line-through;
+}
+
+/* ==========================================================================
+   Tableau récapitulatif
+   ========================================================================== */
+
+.tableau-conteneur {
+  margin-top: 1.5rem;
+  overflow-x: auto;
+  border: 1px solid var(--couleur-bordure);
+  border-radius: var(--rayon-champ);
+}
+
+.tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.tableau th,
+.tableau td {
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--couleur-bordure);
+}
+
+.tableau thead th {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--couleur-texte-doux);
+  background: var(--couleur-fond);
+}
+
+.tableau tbody th {
+  font-weight: 600;
+}
+
+.tableau tbody tr:last-child th,
+.tableau tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tableau tbody tr:hover {
+  background: var(--couleur-primaire-pale);
+}
+
+.tableau .nombre {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tableau-vide {
+  margin-top: 1.25rem;
+  color: var(--couleur-texte-doux);
+}
+
+.pastille--attente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Texte lu par les lecteurs d'écran mais invisible à l'écran. */
+.visuellement-masque {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ==========================================================================

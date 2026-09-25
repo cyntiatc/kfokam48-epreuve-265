@@ -85,6 +85,7 @@ erDiagram
 - `presences (session_id)` et `exercices (session_id)` : attribution des relectures et contrôles par session.
 - `relectures (relecteur_id, statut)` : calcul de `relecturesEnAttente` (RG11).
 - `etudiants (promotion_id)` et `sessions (promotion_id)` : tableau récapitulatif.
+- `presences (etudiant_id)` et `exercices (etudiant_id)` : calculs du tableau récapitulatif par étudiant (RG11, ENF4). Ajoutés par la migration V4.
 
 ## Choix de conception
 

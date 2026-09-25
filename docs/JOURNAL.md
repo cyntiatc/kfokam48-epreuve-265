@@ -24,11 +24,11 @@ Chaque entrée répond aux trois mêmes questions :
 
 ## Étape 2 — Première version
 
-**Fait :**
+**Fait :** (en cours : ticket #1 terminé côté code) environnement mis en place : PostgreSQL 17 sous Docker (port 5435), backend Spring Boot 3.5.16 / Java 21 avec Flyway (V1 schéma conforme à D2, V2 promotions, V3 étudiants fictifs), squelette React/Vite. Ticket #1 `POST /api/sessions` : génération du code unique (RG10), expiration à 15 min (RG1), erreurs au format `{code, message}`, 14 tests unitaires et web, interface React de création de session. Reste à faire pour clore le ticket : exécuter `mvn test`, lancer le build du frontend, faire le test de bout en bout.
 
-**Bloqué :**
+**Bloqué :** [durée à compléter] sans promotion en base, `POST /api/sessions` ne pouvait renvoyer que 400 : migration V2 ajoutée pour les tests manuels. [durée à compléter] la refonte de l'interface incluait l'émargement du ticket #2 : retiré ensuite pour garder le ticket #1 isolé.
 
-**IA :**
+**IA :** lui ai demandé l'initialisation (Docker, Spring Boot, Flyway, React), le backend du ticket #1 avec ses tests, les migrations V2 et V3, puis l'interface. Vérifié : backend et tests compilés (classes présentes dans `target/`), requête et réponses relues face au contrat (champs, 201, 400 `{code, message}`). L'IA a contrôlé les versions des dépendances sur Maven Central et npm avant de les écrire. Les tests ne sont pas encore exécutés.
 
 ---
 

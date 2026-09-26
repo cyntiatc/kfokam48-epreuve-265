@@ -10,6 +10,8 @@ info:
     Toute erreur est renvoyée au format unique `Erreur` : `{ "code": "...", "message": "..." }`.
     Les règles de gestion (RG) et hypothèses (H) citées sont définies dans `docs/CAHIER_DES_CHARGES.md`.
 servers:
+  - url: /
+    description: Même origine que la page (Swagger UI servi par le backend, via localhost comme 127.0.0.1)
   - url: http://localhost:8080
     description: Backend Spring Boot en local
 # Aucune authentification en version 1 (H4).
@@ -263,6 +265,7 @@ paths:
         Une ligne par étudiant de la promotion, y compris sans activité (calculs définis par RG11).
 
         Erreurs (format `Erreur`) :
+        - 400 REQUETE_INVALIDE : promotionId manquant ou qui n'est pas un entier (H2) ;
         - 404 PROMOTION_INCONNUE : aucune promotion ne correspond à promotionId.
       parameters:
         - name: promotionId
@@ -295,6 +298,8 @@ paths:
                   exercicesDeposes: 0
                   moyenne: null
                   relecturesEnAttente: 0
+        '400':
+          $ref: '#/components/responses/Erreur'
         '404':
           $ref: '#/components/responses/Erreur'
 
@@ -316,7 +321,8 @@ components:
       description: |
         Format d'erreur unique de l'API (RG12). Codes utilisés : REQUETE_INVALIDE, CODE_INCONNU, DEJA_PRESENT,
         CODE_EXPIRE, LIEN_INVALIDE, EXERCICE_DEJA_DEPOSE, NOTE_INVALIDE, AUTO_RELECTURE,
-        RELECTURE_DEJA_RENDUE, PROMOTION_INCONNUE.
+        RELECTURE_DEJA_RENDUE, PROMOTION_INCONNUE, SESSION_DEJA_CLOTUREE,
+        ERREUR_INTERNE (erreur inattendue du serveur, 500).
       required: [code, message]
       properties:
         code:

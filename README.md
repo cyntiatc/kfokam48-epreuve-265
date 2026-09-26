@@ -153,7 +153,7 @@ mvn clean test
 
 Les tests d'intégration démarrent PostgreSQL dans Docker : **Docker Desktop doit être lancé**. Sans Docker, ils sont ignorés (« skipped »), pas réussis.
 
-**Dernière exécution complète vérifiée :** 128 tests, 0 échec, 0 ignoré, dont 32 d'intégration (y compris les 2 tests de la documentation interactive).
+**Dernière exécution complète vérifiée :** 130 tests, 0 échec, 0 ignoré, dont 34 d'intégration (y compris les 2 tests de la documentation interactive et les 2 tests de concurrence des émargements).
 
 Le frontend n'a pas de tests automatisés. `npm run build` vérifie qu'il compile.
 

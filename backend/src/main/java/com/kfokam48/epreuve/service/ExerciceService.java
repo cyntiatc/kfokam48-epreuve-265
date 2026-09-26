@@ -42,11 +42,11 @@ public class ExerciceService {
     /**
      * EF3 : dépose le lien de l'exercice d'un étudiant pour une session de sa promotion (H5).
      * La présence n'est pas exigée (H5). Un seul dépôt par étudiant et par session (RG4).
-     * Un relecteur est attribué aussitôt si un étudiant présent est éligible (EF4) : le statut renvoyé
-     * est alors EN_RELECTURE, sinon DEPOSE.
+     * Deux relecteurs sont recherchés aussitôt parmi les étudiants présents éligibles (EF4, RG8) : le statut renvoyé
+     * est EN_RELECTURE si au moins un a été attribué, sinon DEPOSE.
      */
     @Transactional
-    public Exercice deposerExercice(Long sessionId, Long etudiantId, String lien) {
+    public DepotExercice deposerExercice(Long sessionId, Long etudiantId, String lien) {
         String lienValide = validerLien(lien);
 
         SessionCours session = sessionRepository.findById(sessionId)
@@ -73,8 +73,8 @@ public class ExerciceService {
             throw dejaDepose();
         }
 
-        attributionService.attribuerRelecteur(exercice);
-        return exercice;
+        int relecteursAttribues = attributionService.attribuerRelecteurs(exercice).size();
+        return new DepotExercice(exercice, relecteursAttribues);
     }
 
     /** RG5 : URL absolue http ou https, avec un hôte, de 2048 caractères au plus. */

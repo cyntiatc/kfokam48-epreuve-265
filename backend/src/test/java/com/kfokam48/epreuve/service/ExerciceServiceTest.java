@@ -3,6 +3,7 @@ package com.kfokam48.epreuve.service;
 import com.kfokam48.epreuve.domain.Etudiant;
 import com.kfokam48.epreuve.domain.Exercice;
 import com.kfokam48.epreuve.domain.Promotion;
+import com.kfokam48.epreuve.domain.Relecture;
 import com.kfokam48.epreuve.domain.SessionCours;
 import com.kfokam48.epreuve.domain.StatutExercice;
 import com.kfokam48.epreuve.erreur.CodeErreur;
@@ -24,6 +25,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,15 +72,35 @@ class ExerciceServiceTest {
         when(exerciceRepository.existsBySessionIdAndAuteurId(12L, 1L)).thenReturn(false);
         when(exerciceRepository.saveAndFlush(any(Exercice.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Exercice exercice = service.deposerExercice(12L, 1L, "  " + LIEN + "  ");
+        DepotExercice depot = service.deposerExercice(12L, 1L, "  " + LIEN + "  ");
 
+        Exercice exercice = depot.exercice();
         assertThat(exercice.getSession()).isSameAs(session);
         assertThat(exercice.getAuteur()).isSameAs(etudiant);
         assertThat(exercice.getLien()).isEqualTo(LIEN);
         assertThat(exercice.getStatut()).isEqualTo(StatutExercice.DEPOSE);
         assertThat(exercice.getDeposeAt()).isEqualTo(Instant.parse("2026-09-28T09:00:00Z"));
-        // EF4 : un relecteur est recherché dès le dépôt.
-        verify(attributionService).attribuerRelecteur(exercice);
+        // EF4 : les relecteurs sont recherchés dès le dépôt ; aucun n'est disponible ici.
+        verify(attributionService).attribuerRelecteurs(exercice);
+        assertThat(depot.relecteursAttribues()).isZero();
+    }
+
+    @Test
+    void deposerExercice_renvoieLeNombreDeRelecteursAttribues() {
+        preparerSessionEtEtudiant();
+        when(exerciceRepository.existsBySessionIdAndAuteurId(12L, 1L)).thenReturn(false);
+        when(exerciceRepository.saveAndFlush(any(Exercice.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(attributionService.attribuerRelecteurs(any(Exercice.class))).thenAnswer(invocation -> {
+            Exercice exercice = invocation.getArgument(0);
+            Etudiant brice = avecId(new Etudiant("L3GL-002", "Nkoulou", "Brice", "brice.nkoulou@example.com", promotion), 2L);
+            Etudiant carine = avecId(new Etudiant("L3GL-003", "Fotso", "Carine", "carine.fotso@example.com", promotion), 3L);
+            return List.of(new Relecture(exercice, brice, exercice.getDeposeAt()),
+                    new Relecture(exercice, carine, exercice.getDeposeAt()));
+        });
+
+        DepotExercice depot = service.deposerExercice(12L, 1L, LIEN);
+
+        assertThat(depot.relecteursAttribues()).isEqualTo(AttributionService.RELECTEURS_PAR_EXERCICE);
     }
 
     @ParameterizedTest

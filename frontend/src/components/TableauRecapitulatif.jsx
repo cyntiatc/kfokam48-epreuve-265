@@ -5,6 +5,10 @@ import Champ from './Champ.jsx';
 
 const formatMoyenne = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
 
+/** RG6 (évolution de l'Étape 3) : note d'un exercice dont une seule des deux relectures est rendue. */
+const DEFINITION_PROVISOIRE =
+  'La moyenne inclut au moins une note provisoire : un seul des deux relecteurs de l’exercice a rendu sa note.';
+
 /** EF7 : le formateur consulte, pour une promotion, l'activité de chaque étudiant (RG11). */
 export default function TableauRecapitulatif() {
   const [promotionId, setPromotionId] = useState('');
@@ -32,7 +36,7 @@ export default function TableauRecapitulatif() {
       <form className="formulaire" onSubmit={soumettre}>
         <Champ
           libelle="Identifiant de la promotion"
-          aide="Le tableau reflète l’état actuel, notes encore modifiables comprises."
+          aide="Le tableau reflète l’état actuel, notes encore modifiables et notes provisoires comprises."
           placeholder="ex. 1"
           type="number"
           min="1"
@@ -93,6 +97,11 @@ function Resultat({ tableau }) {
                 {ligne.moyenne === null
                   ? <span aria-label="aucune note">—</span>
                   : formatMoyenne.format(ligne.moyenne)}
+                {ligne.estProvisoire && (
+                  <span className="pastille pastille--provisoire" title={DEFINITION_PROVISOIRE}>
+                    provisoire
+                  </span>
+                )}
               </td>
               <td className="nombre">
                 {ligne.relecturesEnAttente > 0
@@ -103,6 +112,11 @@ function Resultat({ tableau }) {
           ))}
         </tbody>
       </table>
+      {tableau.lignes.some((ligne) => ligne.estProvisoire) && (
+        <p className="tableau-legende">
+          <span className="pastille pastille--provisoire">provisoire</span> {DEFINITION_PROVISOIRE}
+        </p>
+      )}
     </div>
   );
 }

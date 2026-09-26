@@ -44,7 +44,8 @@ class RelectureIntegrationTest {
         rendre(attribuee.relectureId(), "15", "Bon travail.").andExpect(status().isOk());
         assertThat(colonne("statut", attribuee.relectureId())).isEqualTo("RENDUE");
         assertThat(note(attribuee.relectureId())).isEqualTo(15);
-        assertThat(statutExercice(attribuee.relectureId())).isEqualTo("RELU");
+        // Brice est le seul relecteur : la note est provisoire, l'exercice attend encore un second relecteur (RG8).
+        assertThat(statutExercice(attribuee.relectureId())).isEqualTo("EN_RELECTURE");
 
         // Décision Q10 : la note reste modifiable tant que la session est ouverte.
         rendre(attribuee.relectureId(), "17", "Note corrigée.").andExpect(status().isOk());
@@ -56,6 +57,32 @@ class RelectureIntegrationTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("RELECTURE_DEJA_RENDUE"));
         assertThat(note(attribuee.relectureId())).isEqualTo(17);
+    }
+
+    @Test
+    void deuxRelecteurs_lExercicePasseReluQuandLesDeuxNotesSontRendues() throws Exception {
+        SessionOuverte session = ouvrirSession();
+        emarger(session.code(), 1);
+        emarger(session.code(), 2);
+        emarger(session.code(), 3);
+        mockMvc.perform(post("/api/exercices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"sessionId": %d, "etudiantId": 1, "lien": "https://exemple.com/exercice-1"}
+                                """.formatted(session.id())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.relecteursAttribues").value(2));
+        List<Long> relectures = jdbcTemplate.queryForList("""
+                SELECT r.id FROM relectures r JOIN exercices e ON e.id = r.exercice_id
+                WHERE e.session_id = ? AND e.etudiant_id = 1 ORDER BY r.id
+                """, Long.class, session.id());
+        assertThat(relectures).hasSize(2);
+
+        rendre(relectures.get(0), "12", "Première relecture.").andExpect(status().isOk());
+        assertThat(statutExercice(relectures.get(0))).isEqualTo("EN_RELECTURE");
+
+        rendre(relectures.get(1), "15", "Seconde relecture.").andExpect(status().isOk());
+        assertThat(statutExercice(relectures.get(1))).isEqualTo("RELU");
     }
 
     @Test

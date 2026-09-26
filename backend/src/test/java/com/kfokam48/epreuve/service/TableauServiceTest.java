@@ -37,8 +37,8 @@ class TableauServiceTest {
     @Test
     void consulter_promotionConnue_renvoieLesStatistiquesDeSesEtudiants() {
         List<StatistiquesEtudiant> statistiques = List.of(
-                new StatistiquesEtudiant(1L, "Mbarga", "Alice", 3, 2, new BigDecimal("15.67"), 1),
-                new StatistiquesEtudiant(2L, "Nkoulou", "Brice", 0, 0, null, 0));
+                new StatistiquesEtudiant(1L, "Mbarga", "Alice", 3, 2, new BigDecimal("15.67"), true, 1),
+                new StatistiquesEtudiant(2L, "Nkoulou", "Brice", 0, 0, null, false, 0));
         when(promotionRepository.existsById(1L)).thenReturn(true);
         when(tableauRepository.statistiquesDeLaPromotion(1L)).thenReturn(statistiques);
 

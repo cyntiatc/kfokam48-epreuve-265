@@ -10,25 +10,27 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
 
 /**
- * Relecture d'un exercice par un pair, une seule par exercice (RG8).
- * Le relecteur est tiré au sort par le système, jamais transmis par la requête.
+ * Relecture d'un exercice par un pair. Chaque exercice en reçoit deux, de relecteurs distincts (RG8, évolution
+ * de l'Étape 3). Le relecteur est tiré au sort par le système, jamais transmis par la requête.
  */
 @Entity
-@Table(name = "relectures")
+@Table(name = "relectures",
+        uniqueConstraints = @UniqueConstraint(name = "uk_relectures_exercice_relecteur",
+                columnNames = {"exercice_id", "relecteur_id"}))
 public class Relecture {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "exercice_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "exercice_id", nullable = false)
     private Exercice exercice;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

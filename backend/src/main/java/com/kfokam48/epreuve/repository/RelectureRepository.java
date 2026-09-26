@@ -18,6 +18,10 @@ public interface RelectureRepository extends JpaRepository<Relecture, Long> {
     @Query("select r from Relecture r where r.id = :id")
     Optional<Relecture> findPourMiseAJour(@Param("id") Long id);
 
+    /** Relectures d'un exercice : deux au plus, de relecteurs distincts (RG8). */
+    @EntityGraph(attributePaths = "relecteur")
+    List<Relecture> findByExerciceId(Long exerciceId);
+
     /** Relectures attribuées à un relecteur, avec leur exercice et leur session chargés en une seule requête. */
     @EntityGraph(attributePaths = {"exercice", "exercice.session"})
     List<Relecture> findByRelecteurIdOrderByAttribueeAtDesc(Long relecteurId);

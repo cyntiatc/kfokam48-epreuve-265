@@ -6,6 +6,7 @@ import com.kfokam48.epreuve.domain.Promotion;
 import com.kfokam48.epreuve.domain.SessionCours;
 import com.kfokam48.epreuve.erreur.CodeErreur;
 import com.kfokam48.epreuve.erreur.ErreurMetierException;
+import com.kfokam48.epreuve.service.DepotExercice;
 import com.kfokam48.epreuve.service.ExerciceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,12 +47,14 @@ class ExerciceControllerTest {
         Etudiant etudiant = new Etudiant("L3GL-001", "Mbarga", "Alice", "alice.mbarga@example.com", promotion);
         Exercice exercice = new Exercice(session, etudiant, LIEN, Instant.parse("2026-09-28T09:00:00Z"));
         ReflectionTestUtils.setField(exercice, "id", 58L);
-        when(exerciceService.deposerExercice(12L, 1L, LIEN)).thenReturn(exercice);
+        exercice.passerEnRelecture();
+        when(exerciceService.deposerExercice(12L, 1L, LIEN)).thenReturn(new DepotExercice(exercice, 2));
 
         envoyer(CORPS_VALIDE)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(58))
-                .andExpect(jsonPath("$.statut").value("DEPOSE"))
+                .andExpect(jsonPath("$.statut").value("EN_RELECTURE"))
+                .andExpect(jsonPath("$.relecteursAttribues").value(2))
                 .andExpect(jsonPath("$.lien").doesNotExist());
     }
 

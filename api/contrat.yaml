@@ -1,11 +1,15 @@
 openapi: 3.0.3
 info:
   title: KFOKAM48 - API Présences et Relectures
-  version: 1.0.0
+  version: 1.1.0
   description: |
     Contrat d'API imposé de l'épreuve KFOKAM48 (5 routes), complété par deux routes marquées comme
     extensions (hypothèse H3) : `GET /api/relectures` (ticket #10) et `POST /api/sessions/{id}/cloture` (ticket #12).
     Candidate : Tedjou Nguimzi Cyntia - Matricule 265.
+
+    Version 1.1.0 : double relecture croisée, évolution imposée à l'Étape 3. Chaque exercice reçoit deux relecteurs
+    distincts ; sa note est la moyenne des deux notes, ou la note unique rendue, marquée provisoire (RG6, RG8).
+    Champs ajoutés : `ExerciceDepose.relecteursAttribues` et `LigneTableau.estProvisoire`.
 
     Toute erreur est renvoyée au format unique `Erreur` : `{ "code": "...", "message": "..." }`.
     Les règles de gestion (RG) et hypothèses (H) citées sont définies dans `docs/CAHIER_DES_CHARGES.md`.
@@ -68,9 +72,11 @@ paths:
       description: |
         Route complémentaire au contrat imposé (hypothèse H3, EF8). Irréversible :
         - le code de présence n'est plus accepté (410 CODE_EXPIRE, RG1) ;
-        - les notes rendues deviennent définitives (exercices RELU -> DEFINITIF, RG9) ;
+        - un exercice dont aucune relecture n'est en attente devient DEFINITIF (RG9, H10) : ses deux notes sont
+          rendues (RELU), ou il n'a eu qu'un relecteur, qui a rendu sa note ;
         - les exercices sans relecteur passent SANS_RELECTURE ;
-        - les relectures encore en attente pourront être rendues une fois (H8).
+        - les relectures encore en attente pourront être rendues une fois (H8) ; l'exercice devient DEFINITIF
+          lorsque la dernière est rendue.
 
         Erreurs (format `Erreur`) :
         - 400 REQUETE_INVALIDE : identifiant incorrect ou session inconnue (H2) ;
@@ -147,8 +153,9 @@ paths:
       operationId: deposerExercice
       summary: Déposer le lien de son exercice pour une session
       description: |
-        Un seul dépôt par étudiant et par session (RG4). Le système tente aussitôt d'attribuer un relecteur (RG8) :
-        le statut renvoyé est EN_RELECTURE si un relecteur a été attribué, DEPOSE sinon.
+        Un seul dépôt par étudiant et par session (RG4). Le système tente aussitôt d'attribuer deux relecteurs
+        distincts parmi les étudiants présents (RG8) : le statut renvoyé est EN_RELECTURE si au moins un relecteur
+        a été attribué, DEPOSE sinon. Les relecteurs manquants sont attribués aux émargements suivants (EF4).
 
         Erreurs (format `Erreur`) :
         - 400 LIEN_INVALIDE : le lien n'est pas une URL http ou https valide (RG5) ;
@@ -170,6 +177,7 @@ paths:
               example:
                 id: 58
                 statut: EN_RELECTURE
+                relecteursAttribues: 2
         '400':
           $ref: '#/components/responses/Erreur'
         '409':
@@ -223,7 +231,8 @@ paths:
       operationId: rendreRelecture
       summary: Rendre (ou modifier avant clôture) la relecture d'un exercice
       description: |
-        Première soumission : la relecture passe à RENDUE.
+        Première soumission : la relecture passe à RENDUE. L'exercice passe RELU quand ses deux relectures sont
+        rendues (RG8) ; tant qu'une seule l'est, sa note est provisoire (RG6).
         Nouvelle soumission : acceptée tant que la session est OUVERTE (décision Q10, RG9).
 
         Erreurs (format `Erreur`) :
@@ -263,6 +272,8 @@ paths:
       summary: Consulter le tableau récapitulatif d'une promotion
       description: |
         Une ligne par étudiant de la promotion, y compris sans activité (calculs définis par RG11).
+        La note d'un exercice est la moyenne de ses deux notes ; tant qu'une seule est rendue, c'est cette note,
+        provisoire (RG6). `estProvisoire` signale qu'au moins une note de la moyenne est provisoire.
 
         Erreurs (format `Erreur`) :
         - 400 REQUETE_INVALIDE : promotionId manquant ou qui n'est pas un entier (H2) ;
@@ -291,12 +302,14 @@ paths:
                   presences: 4
                   exercicesDeposes: 3
                   moyenne: 14.5
+                  estProvisoire: true
                   relecturesEnAttente: 1
                 - etudiantId: 266
                   nom: Exemple Etudiant
                   presences: 1
                   exercicesDeposes: 0
                   moyenne: null
+                  estProvisoire: false
                   relecturesEnAttente: 0
         '400':
           $ref: '#/components/responses/Erreur'
@@ -384,7 +397,7 @@ components:
         exercicesDefinitifs:
           type: integer
           minimum: 0
-          description: Exercices relus dont la note vient de devenir définitive
+          description: Exercices dont la note vient de devenir définitive, aucune de leurs relectures n'étant en attente (H10)
         exercicesSansRelecture:
           type: integer
           minimum: 0
@@ -446,17 +459,27 @@ components:
 
     ExerciceDepose:
       type: object
-      required: [id, statut]
+      required: [id, statut, relecteursAttribues]
       properties:
         id:
           type: integer
           format: int64
         statut:
           $ref: '#/components/schemas/StatutExercice'
+        relecteursAttribues:
+          type: integer
+          minimum: 0
+          maximum: 2
+          description: |
+            Relecteurs attribués dès le dépôt, sur les deux attendus (RG8). Les relecteurs manquants sont attribués
+            aux émargements suivants (EF4).
 
     StatutExercice:
       type: string
-      description: Cycle de vie d'un exercice (diagramme D4)
+      description: |
+        Cycle de vie d'un exercice (diagramme D4) : DEPOSE (aucun relecteur), EN_RELECTURE (au moins un relecteur,
+        moins de deux notes rendues), RELU (deux notes rendues, encore modifiables), DEFINITIF (note figée),
+        SANS_RELECTURE (session clôturée sans relecteur).
       enum: [DEPOSE, EN_RELECTURE, RELU, DEFINITIF, SANS_RELECTURE]
 
     RelectureAttribuee:
@@ -512,7 +535,7 @@ components:
 
     LigneTableau:
       type: object
-      required: [etudiantId, nom, presences, exercicesDeposes, moyenne, relecturesEnAttente]
+      required: [etudiantId, nom, presences, exercicesDeposes, moyenne, estProvisoire, relecturesEnAttente]
       properties:
         etudiantId:
           type: integer
@@ -533,7 +556,14 @@ components:
           nullable: true
           minimum: 0
           maximum: 20
-          description: Moyenne des notes reçues, arrondie à 2 décimales, null si aucune note (RG11, H7)
+          description: |
+            Moyenne des notes des exercices de l'étudiant, arrondie à 2 décimales, null si aucune note (RG11, H7).
+            La note d'un exercice est la moyenne de ses deux notes, ou sa note unique, provisoire (RG6).
+        estProvisoire:
+          type: boolean
+          description: |
+            Vrai si la moyenne inclut au moins une note provisoire : exercice dont une seule relecture est rendue
+            et qui n'est pas DEFINITIF (RG6). Faux lorsque la moyenne est null.
         relecturesEnAttente:
           type: integer
           minimum: 0

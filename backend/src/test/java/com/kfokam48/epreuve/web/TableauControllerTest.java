@@ -33,8 +33,8 @@ class TableauControllerTest {
     @Test
     void consulter_renvoie200AvecUneLigneParEtudiantAuFormatDuContrat() throws Exception {
         when(tableauService.consulter(1L)).thenReturn(List.of(
-                new StatistiquesEtudiant(1L, "Mbarga", "Alice", 3, 2, new BigDecimal("15.67"), 1),
-                new StatistiquesEtudiant(2L, "Nkoulou", "Brice", 0, 0, null, 0)));
+                new StatistiquesEtudiant(1L, "Mbarga", "Alice", 3, 2, new BigDecimal("15.67"), true, 1),
+                new StatistiquesEtudiant(2L, "Nkoulou", "Brice", 0, 0, null, false, 0)));
 
         mockMvc.perform(get("/api/tableau").param("promotionId", "1"))
                 .andExpect(status().isOk())
@@ -44,10 +44,12 @@ class TableauControllerTest {
                 .andExpect(jsonPath("$[0].presences").value(3))
                 .andExpect(jsonPath("$[0].exercicesDeposes").value(2))
                 .andExpect(jsonPath("$[0].moyenne").value(15.67))
+                .andExpect(jsonPath("$[0].estProvisoire").value(true))
                 .andExpect(jsonPath("$[0].relecturesEnAttente").value(1))
-                // Sans note reçue, la moyenne est présente et vaut null (RG11).
+                // Sans note reçue, la moyenne est présente et vaut null (RG11), et n'est pas provisoire (RG6).
                 .andExpect(jsonPath("$[1].nom").value("Nkoulou Brice"))
-                .andExpect(jsonPath("$[1].moyenne").value(nullValue()));
+                .andExpect(jsonPath("$[1].moyenne").value(nullValue()))
+                .andExpect(jsonPath("$[1].estProvisoire").value(false));
     }
 
     @Test

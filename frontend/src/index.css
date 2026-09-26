@@ -682,6 +682,24 @@ textarea.champ__saisie {
   color: #92400e;
 }
 
+/* Note provisoire (RG6, évolution de l'Étape 3) : une seule des deux relectures est rendue. */
+.pastille--provisoire {
+  margin-left: 0.4rem;
+  background: #fef3c7;
+  color: #92400e;
+  white-space: nowrap;
+}
+
+.tableau-legende {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--couleur-texte-doux);
+}
+
+.tableau-legende .pastille--provisoire {
+  margin: 0 0.25rem 0 0;
+}
+
 /* ==========================================================================
    Relectures attribuées
    ========================================================================== */

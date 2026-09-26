@@ -100,6 +100,15 @@ les deux requêtes depuis deux threads libérés au même instant (`CountDownLat
    (personne n'est présent, il reste `DEPOSE`), puis faire émarger simultanément les étudiants 1 et 2.
    Attendu : deux réponses `201`, **2 présences** en base, et **1 seul relecteur** pour l'exercice.
 
+> **Mise à jour — double relecture (Étape 3).** Depuis la migration V5, chaque exercice reçoit deux relecteurs
+> (section 7.4 du cahier des charges). Le scénario 2 attend désormais **2 relecteurs distincts** (les étudiants 1
+> et 2). Il ne peut plus détecter le retrait du verrou : chaque émargement n'ajoute que lui-même, et le total reste
+> de deux. Un scénario 3 le remplace comme test de non-régression du verrou : l'exercice a déjà un relecteur, et
+> deux émargements simultanés ne doivent en ajouter qu'un. Sans le verrou, il échoue dès la première tentative avec
+> trois relecteurs (vérifié le 26/09/2026 sur une copie du backend hors dépôt). La méthode verrouillée s'appelle
+> désormais `ExerciceRepository.findBySessionIdAndStatutInOrderByDeposeAtAscIdAsc` : elle couvre aussi les
+> exercices `EN_RELECTURE` qui attendent leur second relecteur.
+
 ### Manuelle (backend démarré sur le port 8080)
 
 La fenêtre de concurrence ne dure que quelques millisecondes : à la main, il faut en général plusieurs tentatives.

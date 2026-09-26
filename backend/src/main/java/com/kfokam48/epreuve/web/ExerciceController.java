@@ -1,6 +1,5 @@
 package com.kfokam48.epreuve.web;
 
-import com.kfokam48.epreuve.domain.Exercice;
 import com.kfokam48.epreuve.service.ExerciceService;
 import com.kfokam48.epreuve.web.dto.ExerciceDepose;
 import com.kfokam48.epreuve.web.dto.ExerciceDepot;
@@ -26,7 +25,7 @@ public class ExerciceController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ExerciceDepose deposerExercice(@Valid @RequestBody ExerciceDepot requete) {
-        Exercice exercice = exerciceService.deposerExercice(requete.sessionId(), requete.etudiantId(), requete.lien());
-        return ExerciceDepose.depuis(exercice);
+        return ExerciceDepose.depuis(
+                exerciceService.deposerExercice(requete.sessionId(), requete.etudiantId(), requete.lien()));
     }
 }

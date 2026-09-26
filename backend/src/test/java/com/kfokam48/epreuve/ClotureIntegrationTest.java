@@ -12,6 +12,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -40,6 +42,7 @@ class ClotureIntegrationTest {
         emarger(session.code(), 2).andExpect(status().isCreated());
         long exerciceAlice = deposer(session.id(), 1);   // relu par Brice (seul candidat)
         long exerciceBrice = deposer(session.id(), 2);   // relu par Alice (seule candidate)
+        // Relecteur unique : la note de Brice est provisoire, puis définitive à la clôture (H10).
         rendre(relectureDe(exerciceAlice), 15).andExpect(status().isOk());
 
         mockMvc.perform(post("/api/sessions/" + session.id() + "/cloture"))
@@ -67,6 +70,27 @@ class ClotureIntegrationTest {
         mockMvc.perform(post("/api/sessions/" + session.id() + "/cloture"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SESSION_DEJA_CLOTUREE"));
+    }
+
+    @Test
+    void cloture_secondeRelectureEnAttente_laisseLExerciceOuvertPuisLeRendDefinitif() throws Exception {
+        SessionOuverte session = ouvrirSession();
+        emarger(session.code(), 1).andExpect(status().isCreated());
+        emarger(session.code(), 2).andExpect(status().isCreated());
+        emarger(session.code(), 3).andExpect(status().isCreated());
+        long exercice = deposer(session.id(), 1);  // relu par Brice et Carine (RG8)
+        List<Long> relectures = relecturesDe(exercice);
+        rendre(relectures.get(0), 12).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/sessions/" + session.id() + "/cloture"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.exercicesDefinitifs").value(0))
+                .andExpect(jsonPath("$.relecturesEnAttente").value(1));
+        assertThat(statutExercice(exercice)).isEqualTo("EN_RELECTURE");
+
+        // H8 : la seconde relecture est rendue une fois après la clôture ; plus rien n'est en attente.
+        rendre(relectures.get(1), 16).andExpect(status().isOk());
+        assertThat(statutExercice(exercice)).isEqualTo("DEFINITIF");
     }
 
     @Test
@@ -127,6 +151,11 @@ class ClotureIntegrationTest {
 
     private long relectureDe(long exerciceId) {
         return jdbcTemplate.queryForObject("SELECT id FROM relectures WHERE exercice_id = ?", Long.class, exerciceId);
+    }
+
+    private List<Long> relecturesDe(long exerciceId) {
+        return jdbcTemplate.queryForList("SELECT id FROM relectures WHERE exercice_id = ? ORDER BY id",
+                Long.class, exerciceId);
     }
 
     private ResultActions rendre(long relectureId, int note) throws Exception {

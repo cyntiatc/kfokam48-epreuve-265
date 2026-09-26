@@ -3,10 +3,19 @@ import { deposerExercice } from '../api/client.js';
 import Banniere from './Banniere.jsx';
 import Champ from './Champ.jsx';
 
-const LIBELLES_STATUT = {
-  DEPOSE: 'en attente d’attribution d’un relecteur',
-  EN_RELECTURE: 'un relecteur lui a été attribué',
-};
+/** RG8 (évolution de l'Étape 3) : chaque exercice est relu par deux relecteurs distincts. */
+const RELECTEURS_ATTENDUS = 2;
+
+/** Situation des relecteurs au dépôt : les manquants sont désignés aux émargements suivants (EF4). */
+function situationDesRelecteurs(relecteursAttribues) {
+  if (relecteursAttribues >= RELECTEURS_ATTENDUS) {
+    return 'ses deux relecteurs lui ont été attribués.';
+  }
+  if (relecteursAttribues === 1) {
+    return 'un premier relecteur lui a été attribué ; le second sera désigné dès qu’un autre étudiant émargera.';
+  }
+  return 'aucun relecteur n’est encore disponible ; les deux seront désignés parmi les prochains étudiants qui émargeront.';
+}
 
 /**
  * EF3 : l'étudiant dépose le lien de son exercice pour une session.
@@ -90,7 +99,9 @@ export default function FormulaireExercice({ sessionIdInitial, etudiantIdInitial
 
       {exercice && (
         <Banniere type="succes" titre="Exercice déposé avec succès !">
-          Exercice n° {exercice.id} : {LIBELLES_STATUT[exercice.statut] ?? exercice.statut}.
+          Exercice n° {exercice.id} : {situationDesRelecteurs(exercice.relecteursAttribues)}
+          <br />
+          Relecteurs attribués : <strong>{exercice.relecteursAttribues} / {RELECTEURS_ATTENDUS}</strong>
         </Banniere>
       )}
     </>

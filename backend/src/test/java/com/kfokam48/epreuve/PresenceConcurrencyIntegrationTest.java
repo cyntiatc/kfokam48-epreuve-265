@@ -30,9 +30,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * tous les deux (EF2, ENF3). Chaque scénario est rejoué plusieurs fois, les deux requêtes étant libérées
  * ensemble, car une concurrence ne se manifeste pas à chaque exécution. Nécessite Docker.
  * <p>
- * Test de non-régression du verrou posé sur les exercices en attente
- * ({@code ExerciceRepository.findBySessionIdAndStatutOrderByDeposeAtAsc}, ticket #4) : sans lui, les deux émargements
- * attribuent le même exercice, le second échoue en 500 sur {@code uk_relectures_exercice} et sa présence est annulée.
+ * Test de non-régression du verrou posé sur les exercices en attente de relecteur
+ * ({@code ExerciceRepository.findBySessionIdAndStatutInOrderByDeposeAtAscIdAsc}, ticket #4) : sans lui, les deux
+ * émargements complètent le même exercice sans se voir. Avant la double relecture (V5), le second échouait en 500 sur
+ * {@code uk_relectures_exercice} et sa présence était annulée ; depuis, un exercice qui attend son second relecteur
+ * en recevrait un de trop (troisième scénario).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -79,8 +81,32 @@ class PresenceConcurrencyIntegrationTest {
                     .containsExactly("201", "201");
             assertThat(nombrePresences(session.id())).as("tentative %d : présences en base", tentative)
                     .isEqualTo(2);
-            assertThat(nombreRelectures(exerciceId)).as("tentative %d : relecteurs de l'exercice (RG8)", tentative)
-                    .isEqualTo(1);
+            // RG8 : les deux présents deviennent les deux relecteurs, distincts, de l'exercice de l'étudiant 3.
+            assertThat(relecteurs(exerciceId)).as("tentative %d : relecteurs de l'exercice (RG8)", tentative)
+                    .containsExactly(1L, 2L);
+        }
+    }
+
+    /**
+     * L'exercice a déjà un relecteur sur les deux attendus (RG8) : un seul des deux émargements simultanés doit
+     * devenir le second, jamais les deux.
+     */
+    @Test
+    void deuxEmargementsSimultanes_avecUnExerciceAttendantSonSecondRelecteur_nEnAjoutentQuUn() throws Exception {
+        for (int tentative = 1; tentative <= TENTATIVES; tentative++) {
+            SessionOuverte session = ouvrirSessionPourLaPromotion1();
+            // David (4) est présent au dépôt de l'étudiant 3 : il en est le premier relecteur.
+            assertThat(marquer(session.code(), 4).getStatus()).isEqualTo(201);
+            long exerciceId = deposerExercice(session.id(), 3, "EN_RELECTURE");
+
+            List<String> reponses = marquerSimultanement(session.code(), 1, 2);
+
+            assertThat(reponses).as("tentative %d : réponses des deux émargements", tentative)
+                    .containsExactly("201", "201");
+            assertThat(nombrePresences(session.id())).as("tentative %d : présences en base", tentative)
+                    .isEqualTo(3);
+            assertThat(relecteurs(exerciceId)).as("tentative %d : relecteurs de l'exercice (RG8)", tentative)
+                    .hasSize(2).contains(4L);
         }
     }
 
@@ -141,13 +167,18 @@ class PresenceConcurrencyIntegrationTest {
     }
 
     private long deposerExercice(long sessionId, long etudiantId) throws Exception {
+        return deposerExercice(sessionId, etudiantId, "DEPOSE");
+    }
+
+    /** Dépose l'exercice, vérifie le statut obtenu et renvoie son identifiant. */
+    private long deposerExercice(long sessionId, long etudiantId, String statutAttendu) throws Exception {
         String reponse = mockMvc.perform(post("/api/exercices")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"sessionId": %d, "etudiantId": %d, "lien": "https://github.com/exemple/concurrence"}
                                 """.formatted(sessionId, etudiantId)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statut").value("DEPOSE"))
+                .andExpect(jsonPath("$.statut").value(statutAttendu))
                 .andReturn().getResponse().getContentAsString();
         return JsonPath.<Number>read(reponse, "$.id").longValue();
     }
@@ -156,8 +187,9 @@ class PresenceConcurrencyIntegrationTest {
         return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM presences WHERE session_id = ?", Integer.class, sessionId);
     }
 
-    private int nombreRelectures(long exerciceId) {
-        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM relectures WHERE exercice_id = ?", Integer.class, exerciceId);
+    private List<Long> relecteurs(long exerciceId) {
+        return jdbcTemplate.queryForList("SELECT relecteur_id FROM relectures WHERE exercice_id = ? ORDER BY relecteur_id",
+                Long.class, exerciceId);
     }
 
     private record SessionOuverte(long id, String code) {

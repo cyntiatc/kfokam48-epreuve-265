@@ -56,11 +56,14 @@ public class Exercice {
         this.deposeAt = deposeAt;
     }
 
-    /** EF4 : un relecteur vient d'être attribué (D4 : DEPOSE -> EN_RELECTURE). */
+    /**
+     * EF4 : un relecteur vient d'être attribué (D4 : DEPOSE -> EN_RELECTURE). L'attribution du second relecteur
+     * laisse l'exercice EN_RELECTURE (RG8).
+     */
     public void passerEnRelecture() {
-        if (statut != StatutExercice.DEPOSE) {
+        if (statut != StatutExercice.DEPOSE && statut != StatutExercice.EN_RELECTURE) {
             throw new IllegalStateException(
-                    "Seul un exercice déposé peut passer en relecture (statut actuel : " + statut + ").");
+                    "Seul un exercice déposé ou en relecture peut recevoir un relecteur (statut actuel : " + statut + ").");
         }
         statut = StatutExercice.EN_RELECTURE;
     }
@@ -74,7 +77,7 @@ public class Exercice {
         statut = StatutExercice.SANS_RELECTURE;
     }
 
-    /** EF5 : relecture rendue alors que la session est ouverte (D4 : EN_RELECTURE -> RELU). */
+    /** EF5 : les deux relectures sont rendues alors que la session est ouverte (D4 : EN_RELECTURE -> RELU). */
     public void marquerRelu() {
         if (statut != StatutExercice.EN_RELECTURE) {
             throw new IllegalStateException(
@@ -83,7 +86,10 @@ public class Exercice {
         statut = StatutExercice.RELU;
     }
 
-    /** H8 : relecture rendue après la clôture, la note est aussitôt définitive (D4 : EN_RELECTURE -> DEFINITIF). */
+    /**
+     * RG9 : la note devient définitive (D4 : RELU ou EN_RELECTURE -> DEFINITIF), à la clôture ou lorsque la dernière
+     * relecture en attente est rendue après la clôture (H8, H10).
+     */
     public void rendreDefinitif() {
         if (statut != StatutExercice.EN_RELECTURE && statut != StatutExercice.RELU) {
             throw new IllegalStateException(

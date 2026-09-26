@@ -72,70 +72,110 @@ class AttributionServiceTest {
     }
 
     @Test
-    void attribuerRelecteur_sansAucunPresent_laisseLExerciceDepose() {
+    void attribuerRelecteurs_sansAucunPresent_laisseLExerciceDepose() {
         presents();
 
-        assertThat(service.attribuerRelecteur(exerciceDAlice)).isEmpty();
+        assertThat(service.attribuerRelecteurs(exerciceDAlice)).isEmpty();
         assertThat(exerciceDAlice.getStatut()).isEqualTo(StatutExercice.DEPOSE);
         verify(relectureRepository, never()).save(any());
         verifyNoInteractions(aleatoire);
     }
 
     @Test
-    void attribuerRelecteur_seulLAuteurEstPresent_neLuiAttribueJamaisSonExercice() {
+    void attribuerRelecteurs_seulLAuteurEstPresent_neLuiAttribueJamaisSonExercice() {
         presents(alice);
 
-        assertThat(service.attribuerRelecteur(exerciceDAlice)).isEmpty();
+        assertThat(service.attribuerRelecteurs(exerciceDAlice)).isEmpty();
         assertThat(exerciceDAlice.getStatut()).isEqualTo(StatutExercice.DEPOSE);
         verify(relectureRepository, never()).save(any());
     }
 
     @Test
-    void attribuerRelecteur_tireAuHasardParmiLesPresentsLesMoinsCharges() {
+    void attribuerRelecteurs_tireDeuxRelecteursDistinctsParmiLesMoinsCharges() {
         presents(alice, brice, carine, david);
         charges(new ChargeRelecteur(2L, 1L));  // Brice a déjà une relecture : Carine et David sont à égalité
-        when(aleatoire.nextInt(2)).thenReturn(1);  // le tirage désigne le second des deux
+        when(aleatoire.nextInt(2)).thenReturn(1);  // premier tirage : le second des deux, David
         enregistrerLesRelectures();
 
-        Relecture relecture = service.attribuerRelecteur(exerciceDAlice).orElseThrow();
+        List<Relecture> relectures = service.attribuerRelecteurs(exerciceDAlice);
 
-        assertThat(relecture.getRelecteur()).isSameAs(david);
-        assertThat(relecture.getExercice()).isSameAs(exerciceDAlice);
-        assertThat(relecture.getStatut()).isEqualTo(StatutRelecture.EN_ATTENTE);
-        assertThat(relecture.getAttribueeAt()).isEqualTo(MAINTENANT);
+        // Second tirage : David vient de passer à une relecture, comme Brice ; Carine est la seule moins chargée.
+        assertThat(relectures).extracting(Relecture::getRelecteur).containsExactly(david, carine);
+        assertThat(relectures).allSatisfy(relecture -> {
+            assertThat(relecture.getExercice()).isSameAs(exerciceDAlice);
+            assertThat(relecture.getStatut()).isEqualTo(StatutRelecture.EN_ATTENTE);
+            assertThat(relecture.getAttribueeAt()).isEqualTo(MAINTENANT);
+        });
         assertThat(exerciceDAlice.getStatut()).isEqualTo(StatutExercice.EN_RELECTURE);
     }
 
     @Test
-    void attribuerRelecteur_ecarteLAuteurMemeSIlEstLeMoinsCharge() {
+    void attribuerRelecteurs_unSeulCandidat_attribueUnRelecteurEtAttendLeSecond() {
         presents(alice, brice);
-        charges(new ChargeRelecteur(2L, 3L));  // Brice a 3 relectures, Alice (l'auteure) aucune
         enregistrerLesRelectures();
 
-        Relecture relecture = service.attribuerRelecteur(exerciceDAlice).orElseThrow();
+        List<Relecture> relectures = service.attribuerRelecteurs(exerciceDAlice);
 
-        assertThat(relecture.getRelecteur()).isSameAs(brice);
+        assertThat(relectures).extracting(Relecture::getRelecteur).containsExactly(brice);
+        assertThat(exerciceDAlice.getStatut()).isEqualTo(StatutExercice.EN_RELECTURE);
     }
 
     @Test
-    void attribuerExercicesEnAttente_repartitLaChargeEntreLesExercices() {
+    void attribuerRelecteurs_exerciceAyantDejaUnRelecteur_attribueLeSecondSansRepeterLePremier() {
+        exerciceDAlice.passerEnRelecture();
+        relecteursDejaAttribues(brice);
+        presents(alice, brice, carine);
+        charges(new ChargeRelecteur(3L, 3L));  // Carine est plus chargée que Brice, mais Brice relit déjà cet exercice
+        enregistrerLesRelectures();
+
+        List<Relecture> relectures = service.attribuerRelecteurs(exerciceDAlice);
+
+        assertThat(relectures).extracting(Relecture::getRelecteur).containsExactly(carine);
+        assertThat(exerciceDAlice.getStatut()).isEqualTo(StatutExercice.EN_RELECTURE);
+    }
+
+    @Test
+    void attribuerRelecteurs_exerciceAyantDejaDeuxRelecteurs_nAttribueRien() {
+        exerciceDAlice.passerEnRelecture();
+        relecteursDejaAttribues(brice, carine);
+
+        assertThat(service.attribuerRelecteurs(exerciceDAlice)).isEmpty();
+        verify(relectureRepository, never()).save(any());
+        verifyNoInteractions(presenceRepository, aleatoire);
+    }
+
+    @Test
+    void attribuerRelecteurs_ecarteLAuteurMemeSIlEstLeMoinsCharge() {
+        presents(alice, brice, carine);
+        charges(new ChargeRelecteur(2L, 3L), new ChargeRelecteur(3L, 3L));  // Alice (l'auteure) n'a aucune relecture
+        enregistrerLesRelectures();
+
+        List<Relecture> relectures = service.attribuerRelecteurs(exerciceDAlice);
+
+        assertThat(relectures).extracting(Relecture::getRelecteur).containsExactlyInAnyOrder(brice, carine);
+    }
+
+    @Test
+    void attribuerExercicesEnAttente_completeLesExercicesDeposesEtEnRelecture() {
+        // Exercice d'Alice : aucun relecteur. Exercice de Brice : déjà relu par Carine, il lui manque un relecteur.
+        relecteursDejaAttribues();
         Exercice exerciceDeBrice = avecId(new Exercice(session, brice, "https://exemple.com/brice", MAINTENANT), 59L);
-        when(exerciceRepository.findBySessionIdAndStatutOrderByDeposeAtAsc(12L, StatutExercice.DEPOSE))
+        exerciceDeBrice.passerEnRelecture();
+        when(relectureRepository.findByExerciceId(59L))
+                .thenReturn(List.of(new Relecture(exerciceDeBrice, carine, MAINTENANT)));
+        when(exerciceRepository.findBySessionIdAndStatutInOrderByDeposeAtAscIdAsc(
+                12L, List.of(StatutExercice.DEPOSE, StatutExercice.EN_RELECTURE)))
                 .thenReturn(List.of(exerciceDAlice, exerciceDeBrice));
         presents(alice, brice, carine);
-        // Charges relues avant chaque tirage : aucune, puis Carine à 1 après le premier.
-        when(relectureRepository.compterRelecturesParRelecteur(12L))
-                .thenReturn(List.of(), List.of(new ChargeRelecteur(3L, 1L)));
-        when(aleatoire.nextInt(2)).thenReturn(1);
+        charges();
         enregistrerLesRelectures();
 
         service.attribuerExercicesEnAttente(session);
 
         ArgumentCaptor<Relecture> relectures = ArgumentCaptor.forClass(Relecture.class);
-        verify(relectureRepository, times(2)).save(relectures.capture());
-        // Exercice d'Alice : Brice et Carine à égalité, le tirage désigne Carine.
-        // Exercice de Brice : Carine a déjà une relecture, Alice est la seule moins chargée.
-        assertThat(relectures.getAllValues()).extracting(Relecture::getRelecteur).containsExactly(carine, alice);
+        verify(relectureRepository, times(3)).save(relectures.capture());
+        // Exercice d'Alice : Brice puis Carine. Exercice de Brice : Alice, seule présente qui ne le relit pas déjà.
+        assertThat(relectures.getAllValues()).extracting(Relecture::getRelecteur).containsExactly(brice, carine, alice);
         assertThat(exerciceDAlice.getStatut()).isEqualTo(StatutExercice.EN_RELECTURE);
         assertThat(exerciceDeBrice.getStatut()).isEqualTo(StatutExercice.EN_RELECTURE);
     }
@@ -143,6 +183,12 @@ class AttributionServiceTest {
     private void presents(Etudiant... etudiants) {
         when(presenceRepository.findBySessionIdOrderByEtudiantIdAsc(12L)).thenReturn(Arrays.stream(etudiants)
                 .map(etudiant -> new Presence(session, etudiant, MAINTENANT))
+                .toList());
+    }
+
+    private void relecteursDejaAttribues(Etudiant... relecteurs) {
+        when(relectureRepository.findByExerciceId(58L)).thenReturn(Arrays.stream(relecteurs)
+                .map(relecteur -> new Relecture(exerciceDAlice, relecteur, MAINTENANT))
                 .toList());
     }
 

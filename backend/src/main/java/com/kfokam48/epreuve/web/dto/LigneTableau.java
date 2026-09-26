@@ -9,6 +9,7 @@ public record LigneTableau(
         long presences,
         long exercicesDeposes,
         Double moyenne,
+        boolean estProvisoire,
         long relecturesEnAttente) {
 
     public static LigneTableau depuis(StatistiquesEtudiant statistiques) {
@@ -18,6 +19,7 @@ public record LigneTableau(
                 statistiques.presences(),
                 statistiques.exercicesDeposes(),
                 statistiques.moyenne() == null ? null : statistiques.moyenne().doubleValue(),
+                statistiques.estProvisoire(),
                 statistiques.relecturesEnAttente());
     }
 }

@@ -2,7 +2,10 @@ package com.kfokam48.epreuve.repository;
 
 import java.math.BigDecimal;
 
-/** Activité d'un étudiant dans sa promotion, telle que calculée par RG11. {@code moyenne} est null sans note reçue. */
+/**
+ * Activité d'un étudiant dans sa promotion, telle que calculée par RG11. {@code moyenne} est null sans note reçue ;
+ * {@code estProvisoire} indique qu'elle inclut au moins une note provisoire (RG6).
+ */
 public record StatistiquesEtudiant(
         Long etudiantId,
         String nom,
@@ -10,5 +13,6 @@ public record StatistiquesEtudiant(
         long presences,
         long exercicesDeposes,
         BigDecimal moyenne,
+        boolean estProvisoire,
         long relecturesEnAttente) {
 }

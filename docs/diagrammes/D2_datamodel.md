@@ -1,6 +1,6 @@
 # D2 — Modèle de données (PostgreSQL)
 
-Candidate : Tedjou Nguimzi Cyntia — Matricule 265. Référence : `docs/CAHIER_DES_CHARGES.md`, sections 6 et 7.
+Candidate : Tedjou Nguimzi Cyntia — Matricule 265. Référence : `docs/CAHIER_DES_CHARGES.md`, sections 6 et 7. Mis à jour pour la double relecture croisée, évolution imposée à l'Étape 3 (section 7.4, migration V5).
 
 Les tables principales du domaine sont `sessions`, `presences`, `exercices` et `relectures`. Les tables `promotions` et `etudiants` sont des données de référence pré-chargées (H4).
 
@@ -12,7 +12,7 @@ erDiagram
     etudiants ||--o{ presences : "marque"
     sessions ||--o{ exercices : "recoit"
     etudiants ||--o{ exercices : "depose"
-    exercices ||--o| relectures : "fait l'objet de"
+    exercices ||--o{ relectures : "fait l'objet de"
     etudiants ||--o{ relectures : "relit"
 
     promotions {
@@ -54,7 +54,7 @@ erDiagram
     }
     relectures {
         bigint id PK
-        bigint exercice_id FK, UK "une relecture par exercice (RG8)"
+        bigint exercice_id FK "deux relectures par exercice, de relecteurs distincts (RG8, V5)"
         bigint relecteur_id FK "tire au sort par le systeme, present, different de l'auteur (RG2, RG7)"
         smallint note "0 a 20, NULL tant que non rendue (RG6)"
         text commentaire
@@ -75,7 +75,8 @@ erDiagram
 | `presences` | couple (`session_id`, `etudiant_id`) unique | `UNIQUE` | RG3 : `409 DEJA_PRESENT`, y compris en cas d'envois simultanés |
 | `exercices` | couple (`session_id`, `etudiant_id`) unique | `UNIQUE` | RG4 : `409 EXERCICE_DEJA_DEPOSE` |
 | `exercices` | `statut` dans (`DEPOSE`, `EN_RELECTURE`, `RELU`, `DEFINITIF`, `SANS_RELECTURE`) | `CHECK` | D4 |
-| `relectures` | `exercice_id` unique | `UNIQUE` | RG8 : une seule relecture par exercice |
+| `relectures` | couple (`exercice_id`, `relecteur_id`) unique | `UNIQUE` | RG8 : un même relecteur au plus une fois par exercice. Remplace `UNIQUE (exercice_id)` depuis la migration V5 (double relecture, Étape 3) |
+| `relectures` | deux relectures au plus par exercice | contrôle applicatif, sous verrou de l'exercice (le nombre de lignes n'est pas exprimable par une contrainte simple) | RG8 (Étape 3) |
 | `relectures` | `note` entre 0 et 20 ou `NULL` | `CHECK` | RG6 |
 | `relectures` | `statut = 'RENDUE'` si et seulement si `note` et `rendue_at` sont renseignés | `CHECK` | EF5 |
 | `relectures` | relecteur différent de l'auteur et présent à la session | contrôle applicatif (règle portant sur plusieurs tables) | RG2, RG7 |
@@ -86,6 +87,7 @@ erDiagram
 - `relectures (relecteur_id, statut)` : calcul de `relecturesEnAttente` (RG11).
 - `etudiants (promotion_id)` et `sessions (promotion_id)` : tableau récapitulatif.
 - `presences (etudiant_id)` et `exercices (etudiant_id)` : calculs du tableau récapitulatif par étudiant (RG11, ENF4). Ajoutés par la migration V4.
+- `relectures (exercice_id, relecteur_id)` : index de la contrainte unique de la migration V5 ; il commence par `exercice_id` et sert donc les recherches des relectures d'un exercice.
 
 ## Choix de conception
 

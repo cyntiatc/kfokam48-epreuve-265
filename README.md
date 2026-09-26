@@ -7,7 +7,7 @@ Application web qui accompagne une séance de cours de bout en bout :
 1. le **formateur** ouvre une session et obtient un **code de présence** valable 15 minutes ;
 2. chaque **étudiant** émarge avec ce code ;
 3. chaque étudiant **dépose le lien** de son exercice ;
-4. le système **attribue au hasard** l'exercice d'un pair à un étudiant présent, qui le **note (0 à 20) et le commente** — jamais son propre exercice ;
+4. le système **attribue au hasard** l'exercice d'un pair à **deux** étudiants présents, qui le **notent (0 à 20) et le commentent** — jamais leur propre exercice. La note de l'exercice est la moyenne des deux notes ; tant qu'une seule est rendue, elle est affichée comme **provisoire** (évolution de l'Étape 3) ;
 5. le formateur suit l'ensemble sur un **tableau récapitulatif** par promotion, puis **clôture** la session, ce qui rend les notes définitives.
 
 Les exigences, règles de gestion et arbitrages sont décrits dans le [cahier des charges](docs/CAHIER_DES_CHARGES.md).
@@ -36,7 +36,7 @@ kfokam48-epreuve-265/
 │       │   ├── repository/      Accès aux données (Spring Data JPA, requête SQL du tableau)
 │       │   ├── web/             Contrôleurs REST, DTO, format d'erreur unique
 │       │   └── config/          Horloge, tirage au sort, CORS
-│       └── resources/db/migration/   Migrations Flyway V1 à V4
+│       └── resources/db/migration/   Migrations Flyway V1 à V5
 ├── frontend/                    Application React (Vite)
 ├── docs/                        Cahier des charges, journal de bord, diagrammes D1 à D4
 └── docker-compose.yml           PostgreSQL 17
@@ -72,7 +72,7 @@ cd backend
 mvn spring-boot:run
 ```
 
-Au premier démarrage, Flyway applique les migrations V1 à V4 : schéma, puis données de démonstration.
+Au premier démarrage, Flyway applique les migrations V1 à V5 : schéma, données de démonstration, puis passage à la double relecture (V5). Sur une base existante, seule V5 est appliquée ; elle conserve toutes les relectures.
 
 ### 3. Frontend (port 5173)
 
@@ -122,7 +122,7 @@ Toutes les erreurs suivent un **format unique** : `{ "code": "...", "message": "
 | `POST` | `/api/relectures/{id}` | Rendre une relecture, ou la modifier avant la clôture | 200, 400, 403, 409 |
 | `GET` | `/api/tableau?promotionId=` | Tableau récapitulatif d'une promotion | 200, 400, 404 |
 
-L'**attribution des relectures** n'a pas de route : c'est un traitement interne, déclenché à chaque dépôt d'exercice et à chaque nouvel émargement. Le relecteur est tiré au hasard parmi les étudiants présents les moins chargés, jamais l'auteur.
+L'**attribution des relectures** n'a pas de route : c'est un traitement interne, déclenché à chaque dépôt d'exercice et à chaque nouvel émargement. Chaque exercice reçoit deux relecteurs distincts, tirés au hasard parmi les étudiants présents les moins chargés, jamais l'auteur ; s'il n'y en a qu'un de disponible, le second est attribué au prochain émargement.
 
 ### Les 2 routes d'extension
 
@@ -153,7 +153,7 @@ mvn clean test
 
 Les tests d'intégration démarrent PostgreSQL dans Docker : **Docker Desktop doit être lancé**. Sans Docker, ils sont ignorés (« skipped »), pas réussis.
 
-**Dernière exécution complète vérifiée :** 130 tests, 0 échec, 0 ignoré, dont 34 d'intégration (y compris les 2 tests de la documentation interactive et les 2 tests de concurrence des émargements).
+**Dernière exécution complète vérifiée :** 143 tests, 0 échec, 0 ignoré, dont 40 d'intégration (y compris la migration V5 sur une base peuplée, et les tests de concurrence des émargements et des relectures).
 
 Le frontend n'a pas de tests automatisés. `npm run build` vérifie qu'il compile.
 

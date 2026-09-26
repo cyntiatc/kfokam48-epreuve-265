@@ -70,30 +70,66 @@ class TableauIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(4)))
                 // Aline : notes 15, 16 et 16, soit 15,67 arrondi à 2 décimales ; doit encore relire Chloé.
+                // Chaque exercice n'a eu qu'un relecteur, sessions ouvertes : ces notes sont provisoires (RG6).
                 .andExpect(jsonPath("$[0].etudiantId").value(Math.toIntExact(aline)))
                 .andExpect(jsonPath("$[0].nom").value("Atangana Aline"))
                 .andExpect(jsonPath("$[0].presences").value(3))
                 .andExpect(jsonPath("$[0].exercicesDeposes").value(3))
                 .andExpect(jsonPath("$[0].moyenne").value(15.67))
+                .andExpect(jsonPath("$[0].estProvisoire").value(true))
                 .andExpect(jsonPath("$[0].relecturesEnAttente").value(1))
                 // Boris : deux présences, aucun dépôt, ses deux relectures sont rendues.
                 .andExpect(jsonPath("$[1].nom").value("Bella Boris"))
                 .andExpect(jsonPath("$[1].presences").value(2))
                 .andExpect(jsonPath("$[1].exercicesDeposes").value(0))
                 .andExpect(jsonPath("$[1].moyenne").value(nullValue()))
+                .andExpect(jsonPath("$[1].estProvisoire").value(false))
                 .andExpect(jsonPath("$[1].relecturesEnAttente").value(0))
                 // Chloé : un dépôt pas encore relu, donc pas de moyenne.
                 .andExpect(jsonPath("$[2].nom").value("Chouta Chloe"))
                 .andExpect(jsonPath("$[2].presences").value(1))
                 .andExpect(jsonPath("$[2].exercicesDeposes").value(1))
                 .andExpect(jsonPath("$[2].moyenne").value(nullValue()))
+                .andExpect(jsonPath("$[2].estProvisoire").value(false))
                 .andExpect(jsonPath("$[2].relecturesEnAttente").value(0))
                 // Denis : aucune activité, mais bien présent dans le tableau (EF7).
                 .andExpect(jsonPath("$[3].nom").value("Dikongue Denis"))
                 .andExpect(jsonPath("$[3].presences").value(0))
                 .andExpect(jsonPath("$[3].exercicesDeposes").value(0))
                 .andExpect(jsonPath("$[3].moyenne").value(nullValue()))
+                .andExpect(jsonPath("$[3].estProvisoire").value(false))
                 .andExpect(jsonPath("$[3].relecturesEnAttente").value(0));
+    }
+
+    @Test
+    void tableau_noteDUnExerciceEstLaMoyenneDeSesDeuxNotes_etUneNoteUniqueEstProvisoire() throws Exception {
+        long promotionId = creerPromotion();
+        long aline = creerEtudiant(promotionId, "Atangana", "Aline");
+        long boris = creerEtudiant(promotionId, "Bella", "Boris");
+        long chloe = creerEtudiant(promotionId, "Chouta", "Chloe");
+
+        // Session 1 : trois présents, l'exercice d'Aline est relu par Boris et Chloé (RG8).
+        SessionOuverte session1 = ouvrirSession(promotionId);
+        emarger(session1, aline);
+        emarger(session1, boris);
+        emarger(session1, chloe);
+        long exercice1 = deposer(session1, aline);
+        rendre(relectureDe(exercice1, boris), 12);
+        verifierAline(promotionId, 12.0, true);    // une note sur deux : note unique, provisoire (RG6)
+        rendre(relectureDe(exercice1, chloe), 15);
+        verifierAline(promotionId, 13.5, false);   // moyenne arithmétique des deux notes (RG6)
+
+        // Session 2 : seuls Aline et Boris sont présents ; Boris est l'unique relecteur et met 10.
+        SessionOuverte session2 = ouvrirSession(promotionId);
+        emarger(session2, aline);
+        emarger(session2, boris);
+        rendre(relectureDe(deposer(session2, aline), boris), 10);
+        // Moyenne des notes des exercices (13,5 et 10), et non des trois notes (12,33) ; la note 10 est provisoire.
+        verifierAline(promotionId, 11.75, true);
+
+        // Clôture : plus aucune relecture en attente, la note unique devient définitive (H10).
+        mockMvc.perform(post("/api/sessions/" + session2.id() + "/cloture")).andExpect(status().isOk());
+        verifierAline(promotionId, 11.75, false);
     }
 
     @Test
@@ -156,6 +192,20 @@ class TableauIntegrationTest {
 
     private long relectureDe(long exerciceId) {
         return jdbcTemplate.queryForObject("SELECT id FROM relectures WHERE exercice_id = ?", Long.class, exerciceId);
+    }
+
+    private long relectureDe(long exerciceId, long relecteurId) {
+        return jdbcTemplate.queryForObject("SELECT id FROM relectures WHERE exercice_id = ? AND relecteur_id = ?",
+                Long.class, exerciceId, relecteurId);
+    }
+
+    /** Ligne d'Aline, première du tableau (tri par nom). */
+    private void verifierAline(long promotionId, double moyenne, boolean estProvisoire) throws Exception {
+        mockMvc.perform(get("/api/tableau").param("promotionId", String.valueOf(promotionId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nom").value("Atangana Aline"))
+                .andExpect(jsonPath("$[0].moyenne").value(moyenne))
+                .andExpect(jsonPath("$[0].estProvisoire").value(estProvisoire));
     }
 
     private void rendre(long relectureId, int note) throws Exception {

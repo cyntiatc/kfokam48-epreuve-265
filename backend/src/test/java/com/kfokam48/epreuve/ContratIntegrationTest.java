@@ -101,9 +101,13 @@ class ContratIntegrationTest {
     }
 
     @Test
-    void getTableau_200Et404() throws Exception {
+    void getTableau_200_400_404() throws Exception {
         mockMvc.perform(get("/api/tableau").param("promotionId", "1"))
                 .andExpect(status().isOk()).andExpect(conformeAuContrat());
+        mockMvc.perform(get("/api/tableau"))
+                .andExpect(status().isBadRequest()).andExpect(conformeAuContrat());
+        mockMvc.perform(get("/api/tableau").param("promotionId", "abc"))
+                .andExpect(status().isBadRequest()).andExpect(conformeAuContrat());
         mockMvc.perform(get("/api/tableau").param("promotionId", "999999"))
                 .andExpect(status().isNotFound()).andExpect(conformeAuContrat());
     }

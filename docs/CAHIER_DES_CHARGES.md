@@ -114,6 +114,7 @@ Chaque exigence est vérifiée par des critères d'acceptation « Quand… Alors
 - **Critères d'acceptation :**
   - **Quand** le formateur demande le tableau d'une promotion existante, **Alors** le système répond `200` avec une ligne par étudiant de la promotion, y compris ceux sans activité : `{etudiantId, nom, presences, exercicesDeposes, moyenne, relecturesEnAttente}`.
   - **Quand** la promotion n'existe pas, **Alors** le système répond `404 PROMOTION_INCONNUE`.
+  - **Quand** `promotionId` est absent ou n'est pas un entier, **Alors** le système répond `400 REQUETE_INVALIDE` (H2).
 
 ### EF8 — Clôturer une session
 

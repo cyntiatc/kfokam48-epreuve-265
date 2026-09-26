@@ -120,7 +120,7 @@ Toutes les erreurs suivent un **format unique** : `{ "code": "...", "message": "
 | `POST` | `/api/presences` | Émarger avec le code | 201, 400, 409, 410 |
 | `POST` | `/api/exercices` | Déposer le lien de son exercice | 201, 400, 409 |
 | `POST` | `/api/relectures/{id}` | Rendre une relecture, ou la modifier avant la clôture | 200, 400, 403, 409 |
-| `GET` | `/api/tableau?promotionId=` | Tableau récapitulatif d'une promotion | 200, 404 |
+| `GET` | `/api/tableau?promotionId=` | Tableau récapitulatif d'une promotion | 200, 400, 404 |
 
 L'**attribution des relectures** n'a pas de route : c'est un traitement interne, déclenché à chaque dépôt d'exercice et à chaque nouvel émargement. Le relecteur est tiré au hasard parmi les étudiants présents les moins chargés, jamais l'auteur.
 
@@ -153,7 +153,7 @@ mvn clean test
 
 Les tests d'intégration démarrent PostgreSQL dans Docker : **Docker Desktop doit être lancé**. Sans Docker, ils sont ignorés (« skipped »), pas réussis.
 
-**Dernière exécution complète vérifiée :** 126 tests, 0 échec, 0 ignoré, dont 25 d'intégration. Cette exécution précède l'ajout des 2 tests de la documentation interactive.
+**Dernière exécution complète vérifiée :** 128 tests, 0 échec, 0 ignoré, dont 32 d'intégration (y compris les 2 tests de la documentation interactive).
 
 Le frontend n'a pas de tests automatisés. `npm run build` vérifie qu'il compile.
 
